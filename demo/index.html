@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>미리온 공조 시뮬레이터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f1f4f6;
+  --panel: #ffffff;
+  --ink: #10202b;
+  --ink-2: #4c5c68;
+  --line: #d4dbe1;
+  --accent: #0c6e72;
+  --ours: #2a78d6;
+  --base: #eb6834;
+  --bridge: #6250d6;
+  --road: #1baf7a;
+  --good: #1a7f4b;
+  --warn: #9a5b00;
+  --crit: #c0352b;
+  --band: rgba(12, 110, 114, 0.12);
+  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1317; --panel: #151d23; --ink: #e9eef1; --ink-2: #a5b3bd; --line: #2a363f;
+    --accent: #56c5c2; --ours: #3987e5; --base: #d95926; --bridge: #9085e9; --road: #199e70;
+    --good: #46b983; --warn: #dba341; --crit: #e66767;
+    --band: rgba(86, 197, 194, 0.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1317; --panel: #151d23; --ink: #e9eef1; --ink-2: #a5b3bd; --line: #2a363f;
+  --accent: #56c5c2; --ours: #3987e5; --base: #d95926; --bridge: #9085e9; --road: #199e70;
+  --good: #46b983; --warn: #dba341; --crit: #e66767;
+  --band: rgba(86, 197, 194, 0.14);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.55; -webkit-text-size-adjust: 100%; }
+main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: 24px; line-height: 1.25; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font-size: 16px; margin: 0; }
+p { margin: 0; }
+.lede { color: var(--ink-2); max-width: 62ch; }
+.note { color: var(--ink-2); font-size: 13px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.col { display: flex; flex-direction: column; gap: 10px; }
+button, select, input[type="text"] { font: inherit; color: inherit; }
+button { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 500; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 500; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 20px; }
+.slider { display: flex; flex-direction: column; gap: 2px; }
+.slider label { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-2); }
+.slider output { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.tile .k { font-size: 13px; color: var(--ink-2); }
+.tile .v { font-size: 26px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.tile .s { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 500; border: 1px solid currentColor; white-space: nowrap; }
+.pill.good { color: var(--good); } .pill.warn { color: var(--warn); } .pill.crit { color: var(--crit); } .pill.mute { color: var(--ink-2); }
+.advice { border-left: 4px solid var(--accent); }
+.big { font-size: 20px; font-weight: 700; line-height: 1.3; }
+.why { margin: 0; padding-left: 18px; color: var(--ink-2); }
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.chart { position: relative; }
+.chart h3 { font-size: 14px; margin: 0 0 2px; font-weight: 500; }
+.chart svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.chart .tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--ink-2); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+.meter { display: grid; grid-template-columns: 84px 1fr 48px; gap: 8px; align-items: center; font-size: 14px; }
+.meter .track { height: 12px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.meter .fill { height: 100%; border-radius: 4px; }
+.meter b { text-align: right; font-variant-numeric: tabular-nums; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.seg button { font-size: 13px; padding: 4px 10px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-2); }
+.cmd { display: flex; gap: 8px; }
+.cmd input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { font-size: 13px; padding: 4px 10px; border-radius: 999px; }
+.log { display: flex; flex-direction: column; gap: 8px; }
+.entry { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.entry .said { font-weight: 500; }
+.entry .line { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: baseline; font-size: 14px; }
+.entry .because { color: var(--ink-2); font-size: 13px; flex-basis: 100%; }
+.inv { margin: 0; padding-left: 20px; font-size: 13px; color: var(--ink-2); columns: 2 300px; column-gap: 28px; }
+.inv li { break-inside: avoid; margin-bottom: 3px; }
+.assume { font-size: 13px; color: var(--ink-2); margin: 0; padding-left: 18px; }
+label.check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; color: var(--ink); }
+@media (prefers-reduced-motion: no-preference) { button { transition: border-color 0.15s; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>미리온 공조 시뮬레이터</h1>
+    <p class="lede">같은 차, 같은 날씨, 같은 경로에서 일반 자동 공조와 미리온을 나란히 달려 봅니다. 조건을 바꾸면 차 안에서 돌아갈 엔진이 이 화면에서 그대로 다시 계산합니다.</p>
+    <p class="note">모든 수치는 모델로 계산한 추정이며 실차 측정값이 아닙니다.</p>
+  </header>
+
+  <section class="panel" aria-labelledby="h-cond">
+    <h2 id="h-cond">주행 조건</h2>
+    <div class="row" id="presets"></div>
+    <div class="sliders">
+      <div class="slider"><label for="in-tamb">외기 온도 <output id="out-tamb"></output></label><input id="in-tamb" type="range" min="-15" max="38" step="1"></div>
+      <div class="slider"><label for="in-sun">일사 <output id="out-sun"></output></label><input id="in-sun" type="range" min="0" max="1000" step="50"></div>
+      <div class="slider"><label for="in-occ">탑승 인원 <output id="out-occ"></output></label><input id="in-occ" type="range" min="1" max="4" step="1"></div>
+      <div class="slider"><label for="in-min">주행 시간 <output id="out-min"></output></label><input id="in-min" type="range" min="5" max="120" step="5"></div>
+      <div class="slider"><label for="in-rec">기준 공조의 난방 내기 순환 <output id="out-rec"></output></label><input id="in-rec" type="range" min="0" max="80" step="10"></div>
+    </div>
+    <label class="check"><input id="in-seat" type="checkbox"> 기준 공조도 시트 열선 2단을 켠 것으로 비교</label>
+  </section>
+
+  <section class="tiles" id="tiles" aria-label="요약"></section>
+
+  <section class="panel advice" aria-labelledby="h-now">
+    <h2 id="h-now">운전자에게 보이는 화면 <span class="note" id="now-min"></span></h2>
+    <div class="big" id="now-text"></div>
+    <ul class="why" id="now-why"></ul>
+    <div class="slider"><label for="in-scrub">주행 경과 시간 <output id="out-scrub"></output></label><input id="in-scrub" type="range" min="0" max="34" step="1" value="0"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-chart">
+    <h2 id="h-chart">근거 그래프</h2>
+    <div class="legend"><span><i style="background:var(--ours)"></i>미리온</span><span><i style="background:var(--base)"></i>기준 자동 공조</span><span><i style="background:var(--band);height:10px"></i>쾌적 대역</span></div>
+    <div class="charts">
+      <div class="chart" id="c-teq"></div>
+      <div class="chart" id="c-pow"></div>
+      <div class="chart" id="c-fog"></div>
+      <div class="chart" id="c-co2"></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-ice">
+    <h2 id="h-ice">노면 결빙 추정</h2>
+    <p class="lede">차가 아는 것은 외기 온도와 시각뿐이고 구름, 습도, 바람은 모릅니다. 모르는 값을 600가지로 가정해 노면 온도를 각각 계산하고, 그중 얼어 있는 비율을 확률로 보여 줍니다.</p>
+    <div class="split">
+      <div class="col">
+        <div class="slider"><label for="i-temp">외기 온도 <output id="io-temp"></output></label><input id="i-temp" type="range" min="-8" max="8" step="0.5" value="1.5"></div>
+        <div class="slider"><label for="i-hour">시각 <output id="io-hour"></output></label><input id="i-hour" type="range" min="0" max="23.5" step="0.5" value="5.5"></div>
+        <div class="field">하늘 <div class="seg" id="i-sky"></div></div>
+        <div class="field">습도 <div class="seg" id="i-hum"></div></div>
+        <div class="row">
+          <label class="check"><input id="i-rain" type="checkbox"> 지금 비·눈</label>
+          <label class="check"><input id="i-recent" type="checkbox"> 하루 안에 비</label>
+          <label class="check"><input id="i-slip" type="checkbox"> 미끄러짐 감지</label>
+        </div>
+      </div>
+      <div class="col">
+        <div class="big" id="ice-head"></div>
+        <div id="ice-action"></div>
+        <div class="meter"><span>교량·고가</span><div class="track"><div class="fill" id="ice-bar-bridge" style="background:var(--bridge)"></div></div><b id="ice-p-bridge"></b></div>
+        <div class="meter"><span>일반 도로</span><div class="track"><div class="fill" id="ice-bar-road" style="background:var(--road)"></div></div><b id="ice-p-road"></b></div>
+        <ul class="why" id="ice-why"></ul>
+      </div>
+    </div>
+    <div class="legend"><span><i style="background:var(--bridge)"></i>교량·고가</span><span><i style="background:var(--road)"></i>일반 도로</span></div>
+    <div class="chart" id="c-ice" style="max-width:620px"></div>
+    <p class="note">노면 온도 모델은 실측으로 검증하지 않았습니다. 확률이 낮게 나와도 안전하다는 뜻이 아니며, 화면은 그렇게 말하지 않습니다.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-gate">
+    <h2 id="h-gate">안전 게이트</h2>
+    <p class="lede">예측 제어가 만든 명령은 모두 게이트를 지나야 차에 보내집니다. 차량 상태를 바꿔 가며 명령을 눌러 보세요.</p>
+    <div class="split">
+      <div class="col">
+        <div class="slider"><label for="g-speed">속도 <output id="go-speed"></output></label><input id="g-speed" type="range" min="0" max="140" step="10" value="100"></div>
+        <div class="slider"><label for="g-fog">김서림 여유 <output id="go-fog"></output></label><input id="g-fog" type="range" min="-1" max="8" step="0.5" value="1"></div>
+        <div class="slider"><label for="g-co2">실내 CO2 <output id="go-co2"></output></label><input id="g-co2" type="range" min="400" max="3000" step="100" value="800"></div>
+        <div class="row">
+          <label class="check"><input id="g-rain" type="checkbox"> 비</label>
+          <label class="check"><input id="g-child" type="checkbox" checked> 뒷자리에 어린이</label>
+          <label class="check"><input id="g-pass" type="checkbox"> 조수석 탑승</label>
+        </div>
+        <p class="note" id="g-state"></p>
+      </div>
+      <div class="col">
+        <div class="chips" id="g-chips"></div>
+        <div class="log" id="g-log" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="row"><button id="v-run" type="button">게이트 전수 검사 실행</button><span id="v-out" class="note"></span></div>
+    <ol class="inv" id="v-inv"></ol>
+  </section>
+
+  <section class="panel" aria-labelledby="h-assume">
+    <h2 id="h-assume">계산에 쓴 가정</h2>
+    <ul class="assume">
+      <li>차량은 중형 전기차를 가정한 집중정수 열 모델(실내 공기, 내장재, 앞유리, 옆·뒷유리, 차체 외판)이며 수증기와 CO2 는 실내 공기의 물질수지로 계산합니다.</li>
+      <li>기준 자동 공조는 미리온과 같은 체감온도 목표를 PI 제어로 맞추고, 내기 순환은 고정(난방 시 위 슬라이더 값, 냉방 시 60%), 앞유리 풍량은 15% 고정입니다.</li>
+      <li>체감온도는 공기 온도, 주변 표면 온도, 일사, 시트 열선·통풍 효과를 합친 등가온도입니다. 열선 1단을 0.8K 로 본 것은 가정값입니다.</li>
+      <li>환산 주행거리는 사용 가능 용량 77kWh 로 이 주행 조건이 계속될 때의 값입니다. 저온에 따른 배터리 자체의 성능 저하는 넣지 않았습니다.</li>
+      <li>히트펌프 효율은 외기 온도만의 함수로 단순화했고, 냉방의 제습 부하는 넣지 않았습니다.</li>
+      <li>결빙 추정은 노면 한 층의 에너지 수지(대류, 하늘 복사, 일사, 지중 열)이며 구름량, 이슬점, 바람, 센서 오차, 모델 오차를 표본으로 뽑습니다.</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+const __defs = {};
+const __cache = {};
+function __req(name) {
+  const key = name.replace("./", "");
+  if (!__cache[key]) {
+    const module = { exports: {} };
+    __defs[key](module, module.exports, __req);
+    __cache[key] = module.exports;
+  }
+  return __cache[key];
+}
+__defs["thermal"] = function (module, exports, require) {
+'use strict';
+
+const CP_AIR = 1006;
+const RHO_AIR = 1.2;
+const P_ATM = 101325;
+
+const VEHICLE = Object.freeze({
+  cabinVolume: 3.4,
+  Ca: 9e3,
+  Cm: 90e3,
+  Cw: 14e3,
+  Cg: 24e3,
+  Cs: 110e3,
+  windArea: 1.3,
+  glassArea: 2.7,
+  shellArea: 10.0,
+  hInGlass: 7.5,
+  shellU: 1.6,
+  massBase: 60,
+  massBlower: 90,
+  solarMass: 0.75,
+  solarWind: 0.1,
+  solarGlass: 0.2,
+  solarShell: 1.5,
+  leakBase: 0.002,
+  leakPerMs: 0.00025,
+  flowMin: 0.03,
+  flowSpan: 0.07,
+  flowRamp: 300,
+  qHeatMax: 5500,
+  qCoolMax: 6000,
+  seatHeatW: 22,
+  seatVentW: 8,
+  defrostEta: 0.35,
+  defrostConv: 1.5,
+  uaScale: 1,
+  massScale: 1,
+  solarScale: 1,
+});
+
+const OCC_SENSIBLE = 75;
+const OCC_VAPOR = 55 / 3.6e6;
+const OCC_CO2 = 5.0e-6;
+const CO2_AMBIENT = 420;
+const EVAP_TEMP = 5;
+const DEHUMID_START = 200;
+const DEHUMID_SPAN = 400;
+
+function clamp(x, lo, hi) {
+  return x < lo ? lo : x > hi ? hi : x;
+}
+
+function satPressure(t) {
+  return 610.94 * Math.exp((17.625 * t) / (t + 243.04));
+}
+
+function humidityRatio(t, rh) {
+  const pv = rh * satPressure(t);
+  return (0.622 * pv) / (P_ATM - pv);
+}
+
+function dSatHumidityRatio(t) {
+  const pv = satPressure(t);
+  const dpv = (pv * 17.625 * 243.04) / ((t + 243.04) * (t + 243.04));
+  return (0.622 * P_ATM * dpv) / ((P_ATM - pv) * (P_ATM - pv));
+}
+
+function dewPoint(w) {
+  const pv = (w * P_ATM) / (0.622 + w);
+  const a = Math.log(Math.max(pv, 1) / 610.94);
+  return (243.04 * a) / (17.625 - a);
+}
+
+function dDewPoint(w) {
+  const pv = (w * P_ATM) / (0.622 + w);
+  if (pv <= 1) return 0;
+  const a = Math.log(pv / 610.94);
+  const dpv = (P_ATM * 0.622) / ((0.622 + w) * (0.622 + w));
+  return ((243.04 * 17.625) / ((17.625 - a) * (17.625 - a))) * (dpv / pv);
+}
+
+function hExt(v) {
+  return 9 + 3.5 * Math.pow(Math.max(v, 0), 0.8);
+}
+
+function copHeat(tAmb) {
+  return clamp(1.0 + 0.085 * (tAmb + 20), 1.0, 3.6);
+}
+
+function copCool(tAmb) {
+  return clamp(3.4 - 0.07 * (tAmb - 25), 1.5, 3.6);
+}
+
+function blowerOf(q, veh) {
+  return Math.min(1, Math.abs(q) / (0.8 * veh.qHeatMax));
+}
+
+function derive(u, env, veh, k) {
+  const q = clamp(u.q, -veh.qCoolMax, veh.qHeatMax);
+  const aq = Math.abs(q);
+  const sign = q >= 0 ? 1 : -1;
+  const bFull = 0.8 * veh.qHeatMax;
+  k.q = q;
+  k.r = clamp(u.recirc, 0, 0.9);
+  k.d = clamp(u.defrost || 0, 0, 1);
+  k.l = u.local;
+  k.pos = q > 0 ? 1 : 0;
+  k.b = aq < bFull ? aq / bFull : 1;
+  k.db = aq < bFull ? sign / bFull : 0;
+  k.g = aq < veh.flowRamp ? aq / veh.flowRamp : 1;
+  k.dg = aq < veh.flowRamp ? sign / veh.flowRamp : 0;
+  k.flow = k.g * (veh.flowMin + veh.flowSpan * k.b);
+  k.dflow = k.dg * (veh.flowMin + veh.flowSpan * k.b) + k.g * veh.flowSpan * k.db;
+  k.fresh = k.flow * (1 - k.r) + veh.leakBase + veh.leakPerMs * env.speed;
+  const he = hExt(env.speed);
+  const hin = veh.uaScale * veh.hInGlass;
+  k.kam = veh.massBase + veh.massBlower * k.b;
+  k.kaw = hin * veh.windArea * (1 + 0.6 * k.b + veh.defrostConv * k.d * k.b);
+  k.kag = hin * veh.glassArea * (1 + 0.6 * k.b);
+  k.kas = veh.uaScale * veh.shellU * veh.shellArea;
+  k.kwo = he * veh.windArea;
+  k.kgo = he * veh.glassArea;
+  k.kso = he * veh.shellArea;
+  k.kv = k.fresh * CP_AIR;
+  const h = (-q - DEHUMID_START) / DEHUMID_SPAN;
+  k.hd = h <= 0 ? 0 : h >= 1 ? 1 : h;
+  k.dhd = h > 0 && h < 1 ? -1 / DEHUMID_SPAN : 0;
+  return k;
+}
+
+function electricPower(u, env, veh) {
+  const q = clamp(u.q, -veh.qCoolMax, veh.qHeatMax);
+  const aq = Math.abs(q);
+  const b = blowerOf(q, veh);
+  const g = aq < veh.flowRamp ? aq / veh.flowRamp : 1;
+  const thermal = q >= 0 ? q / copHeat(env.tAmb) : -q / copCool(env.tAmb);
+  const seats = env.occupants * (u.local >= 0 ? veh.seatHeatW * u.local : -veh.seatVentW * u.local);
+  return thermal + g * (20 + 180 * b * b * b) + seats;
+}
+
+function electricPowerGrad(u, env, veh, out) {
+  const q = clamp(u.q, -veh.qCoolMax, veh.qHeatMax);
+  const aq = Math.abs(q);
+  const sign = q >= 0 ? 1 : -1;
+  const bFull = 0.8 * veh.qHeatMax;
+  const b = aq < bFull ? aq / bFull : 1;
+  const db = aq < bFull ? sign / bFull : 0;
+  const g = aq < veh.flowRamp ? aq / veh.flowRamp : 1;
+  const dg = aq < veh.flowRamp ? sign / veh.flowRamp : 0;
+  out.q = (q >= 0 ? 1 / copHeat(env.tAmb) : -1 / copCool(env.tAmb)) + dg * (20 + 180 * b * b * b) + g * 540 * b * b * db;
+  out.local = env.occupants * (u.local >= 0 ? veh.seatHeatW : -veh.seatVentW);
+  return out;
+}
+
+function initialState(t, rh) {
+  return { ta: t, tm: t, tw: t, tg: t, ts: t, w: humidityRatio(t, rh), co2: CO2_AMBIENT };
+}
+
+const _k = {};
+const _x = new Float64Array(5);
+
+function solveArrow(daa, dm, dw, dg, ds, k, ra, rm, rw, rg, rs, x) {
+  const schur = daa - (k.kam * k.kam) / dm - (k.kaw * k.kaw) / dw - (k.kag * k.kag) / dg - (k.kas * k.kas) / ds;
+  const a = (ra + (k.kam * rm) / dm + (k.kaw * rw) / dw + (k.kag * rg) / dg + (k.kas * rs) / ds) / schur;
+  x[0] = a;
+  x[1] = (rm + k.kam * a) / dm;
+  x[2] = (rw + k.kaw * a) / dw;
+  x[3] = (rg + k.kag * a) / dg;
+  x[4] = (rs + k.kas * a) / ds;
+  return x;
+}
+
+function step(s, u, env, dt, veh = VEHICLE, out = {}) {
+  const k = derive(u, env, veh, _k);
+  const ca = veh.Ca / dt;
+  const cm = (veh.Cm * veh.massScale) / dt;
+  const cw = veh.Cw / dt;
+  const cg = veh.Cg / dt;
+  const cs = veh.Cs / dt;
+  const sun = env.sun * veh.solarScale;
+  const qw = veh.defrostEta * k.d * k.pos * k.q;
+  const seatHeat = k.l > 0 ? env.occupants * veh.seatHeatW * k.l : 0;
+  solveArrow(
+    ca + k.kam + k.kaw + k.kag + k.kas + k.kv,
+    cm + k.kam,
+    cw + k.kaw + k.kwo,
+    cg + k.kag + k.kgo,
+    cs + k.kas + k.kso,
+    k,
+    ca * s.ta + k.kv * env.tAmb + k.q - qw + env.occupants * OCC_SENSIBLE,
+    cm * s.tm + veh.solarMass * sun + seatHeat,
+    cw * s.tw + k.kwo * env.tAmb + veh.solarWind * sun + qw,
+    cg * s.tg + k.kgo * env.tAmb + veh.solarGlass * sun,
+    cs * s.ts + k.kso * env.tAmb + veh.solarShell * sun,
+    _x
+  );
+
+  const mAir = (RHO_AIR * veh.cabinVolume) / dt;
+  const wAmb = humidityRatio(env.tAmb, env.rh);
+  const wEvap = humidityRatio(EVAP_TEMP, 1);
+  const evap = k.hd > 0 && s.w > wEvap ? k.hd * k.flow : 0;
+  const w = (mAir * s.w + k.fresh * wAmb + env.occupants * OCC_VAPOR + evap * wEvap) / (mAir + k.fresh + evap);
+
+  const vol = veh.cabinVolume / dt;
+  const qf = k.fresh / RHO_AIR;
+  const co2 = (vol * s.co2 + qf * CO2_AMBIENT + env.occupants * OCC_CO2 * 1e6) / (vol + qf);
+
+  out.ta = _x[0];
+  out.tm = _x[1];
+  out.tw = _x[2];
+  out.tg = _x[3];
+  out.ts = _x[4];
+  out.w = Math.min(w, humidityRatio(_x[0], 1));
+  out.co2 = co2;
+  return out;
+}
+
+function stepAdjoint(s, n, u, env, dt, veh, lam, gu) {
+  const k = derive(u, env, veh, _k);
+  const ca = veh.Ca / dt;
+  const cm = (veh.Cm * veh.massScale) / dt;
+  const cw = veh.Cw / dt;
+  const cg = veh.Cg / dt;
+  const cs = veh.Cs / dt;
+
+  const mAir = (RHO_AIR * veh.cabinVolume) / dt;
+  const wAmb = humidityRatio(env.tAmb, env.rh);
+  const wEvap = humidityRatio(EVAP_TEMP, 1);
+  const evapOn = k.hd > 0 && s.w > wEvap;
+  const evap = evapOn ? k.hd * k.flow : 0;
+  const den = mAir + k.fresh + evap;
+  const wStar = (mAir * s.w + k.fresh * wAmb + env.occupants * OCC_VAPOR + evap * wEvap) / den;
+  let lamTa = lam.ta;
+  let nu = lam.w;
+  if (wStar > humidityRatio(n.ta, 1)) {
+    lamTa += lam.w * dSatHumidityRatio(n.ta);
+    nu = 0;
+  }
+  let dFresh = (nu * (wAmb - wStar)) / den;
+  const dEvap = evapOn ? (nu * (wEvap - wStar)) / den : 0;
+  const lamW = (nu * mAir) / den;
+
+  const vol = veh.cabinVolume / dt;
+  const qf = k.fresh / RHO_AIR;
+  dFresh += (lam.co2 * (CO2_AMBIENT - n.co2)) / (vol + qf) / RHO_AIR;
+  const lamC = (lam.co2 * vol) / (vol + qf);
+
+  const mu = solveArrow(
+    ca + k.kam + k.kaw + k.kag + k.kas + k.kv,
+    cm + k.kam,
+    cw + k.kaw + k.kwo,
+    cg + k.kag + k.kgo,
+    cs + k.kas + k.kso,
+    k,
+    lamTa,
+    lam.tm,
+    lam.tw,
+    lam.tg,
+    lam.ts,
+    _x
+  );
+  const mua = mu[0];
+  const mum = mu[1];
+  const muw = mu[2];
+  const mug = mu[3];
+  const mus = mu[4];
+
+  const dkam = -(mua - mum) * (n.ta - n.tm);
+  const dkaw = -(mua - muw) * (n.ta - n.tw);
+  const dkag = -(mua - mug) * (n.ta - n.tg);
+  dFresh += mua * (env.tAmb - n.ta) * CP_AIR;
+
+  const hin = veh.uaScale * veh.hInGlass;
+  const eta = veh.defrostEta;
+  const dB = dkam * veh.massBlower + dkaw * hin * veh.windArea * (0.6 + veh.defrostConv * k.d) + dkag * hin * veh.glassArea * 0.6;
+  const dFlow = dFresh * (1 - k.r) + dEvap * k.hd;
+
+  gu.q += mua * (1 - eta * k.d * k.pos) + muw * eta * k.d * k.pos + dB * k.db + dFlow * k.dflow + dEvap * k.dhd * k.flow;
+  gu.recirc += -dFresh * k.flow;
+  gu.defrost += (muw - mua) * eta * k.pos * k.q + dkaw * hin * veh.windArea * veh.defrostConv * k.b;
+  if (k.l > 0 || (k.l === 0 && u.heating)) gu.local += mum * env.occupants * veh.seatHeatW;
+
+  lam.ta = ca * mua;
+  lam.tm = cm * mum;
+  lam.tw = cw * muw;
+  lam.tg = cg * mug;
+  lam.ts = cs * mus;
+  lam.w = lamW;
+  lam.co2 = lamC;
+}
+
+function fogMargin(s) {
+  return s.tw - dewPoint(s.w);
+}
+
+module.exports = {
+  VEHICLE,
+  CP_AIR,
+  RHO_AIR,
+  CO2_AMBIENT,
+  clamp,
+  satPressure,
+  humidityRatio,
+  dSatHumidityRatio,
+  dewPoint,
+  dDewPoint,
+  hExt,
+  copHeat,
+  copCool,
+  blowerOf,
+  derive,
+  electricPower,
+  electricPowerGrad,
+  initialState,
+  step,
+  stepAdjoint,
+  fogMargin,
+};
+
+};
+__defs["comfort"] = function (module, exports, require) {
+'use strict';
+
+const LOCAL_HEAT_K = 0.8;
+const LOCAL_VENT_K = 0.7;
+const SUN_K = 0.0015;
+const BAND = 0.5;
+const W_AIR = 0.66;
+const W_MASS = 0.24;
+const W_GLASS = 0.1;
+
+function glassShare(veh) {
+  return veh.windArea / (veh.windArea + veh.glassArea);
+}
+
+function equivalentTemp(s, env, local, veh) {
+  const fw = veh ? glassShare(veh) : 0.325;
+  const base = W_AIR * s.ta + W_MASS * s.tm + W_GLASS * (fw * s.tw + (1 - fw) * s.tg) + SUN_K * env.sun;
+  return base + (local >= 0 ? LOCAL_HEAT_K * local : LOCAL_VENT_K * local);
+}
+
+function discomfort(teq, target) {
+  const d = Math.abs(teq - target) - BAND;
+  return d > 0 ? d : 0;
+}
+
+function targetFor(tAmb) {
+  return tAmb < 15 ? 22 : 24;
+}
+
+module.exports = { LOCAL_HEAT_K, LOCAL_VENT_K, SUN_K, BAND, W_AIR, W_MASS, W_GLASS, glassShare, equivalentTemp, discomfort, targetFor };
+
+};
+__defs["mpc"] = function (module, exports, require) {
+'use strict';
+
+const T = require('./thermal');
+const C = require('./comfort');
+
+const NV = 4;
+const SOFT = 0.05;
+
+const DEFAULTS = Object.freeze({
+  dt: 60,
+  block: 2,
+  horizon: 20,
+  wEnergy: 1,
+  wComfort: 0.02,
+  wComfortLin: 0.02,
+  wFog: 0.5,
+  wCo2: 0.05,
+  wSmooth: 0.002,
+  wLocalSmooth: 0.004,
+  wTerminal: 0.15,
+  wAir: 0.02,
+  airMin: 17,
+  airMax: 28,
+  localMax: 2,
+  fogLimit: 2.0,
+  co2Target: 1100,
+  iterations: 1000,
+  tolerance: 1e-5,
+  memory: 8,
+  solver: 'pqn',
+});
+
+function decode(z, k, veh, heating, localMax, out = {}) {
+  out.q = heating ? z[NV * k] * veh.qHeatMax : -z[NV * k] * veh.qCoolMax;
+  out.recirc = z[NV * k + 1] * 0.9;
+  out.local = heating ? z[NV * k + 2] * localMax : -z[NV * k + 2] * localMax;
+  out.defrost = z[NV * k + 3];
+  out.heating = heating;
+  return out;
+}
+
+function createProblem(s0, envAt, steps, target, veh, cfg, heating, continues, prevLocal) {
+  const blocks = Math.ceil(cfg.horizon / cfg.block);
+  const n = blocks * NV;
+  const used = Math.min(blocks, Math.ceil(steps / cfg.block));
+  const traj = Array.from({ length: steps + 1 }, () => ({}));
+  const us = Array.from({ length: blocks }, () => ({ q: 0, recirc: 0, local: 0, defrost: 0 }));
+  const gus = Array.from({ length: blocks }, () => ({ q: 0, recirc: 0, local: 0, defrost: 0 }));
+  const envs = Array.from({ length: steps }, (_, i) => envAt(i));
+  const minutes = cfg.dt / 60;
+  const fw = C.glassShare(veh);
+  const lam = { ta: 0, tm: 0, tw: 0, tg: 0, ts: 0, w: 0, co2: 0 };
+  const pg = { q: 0, local: 0 };
+  const blockOf = (i) => Math.min((i / cfg.block) | 0, blocks - 1);
+  const localGain = heating ? C.LOCAL_HEAT_K : C.LOCAL_VENT_K;
+
+  function comfortTerm(s, env, u, scaleQuad, scaleLin, back, gu) {
+    const teq = C.equivalentTemp(s, env, u.local, veh);
+    const d = C.discomfort(teq, target);
+    if (d <= 0) return 0;
+    const soft = Math.sqrt(d * d + SOFT * SOFT);
+    if (back) {
+      const g = (2 * scaleQuad * d + (scaleLin * d) / soft) * (teq > target ? 1 : -1);
+      lam.ta += g * C.W_AIR;
+      lam.tm += g * C.W_MASS;
+      lam.tw += g * C.W_GLASS * fw;
+      lam.tg += g * C.W_GLASS * (1 - fw);
+      gu.local += g * localGain;
+    }
+    return scaleQuad * d * d + scaleLin * (soft - SOFT);
+  }
+
+  function stage(i, s, u, env, back, gu) {
+    let j = (cfg.wEnergy * T.electricPower(u, env, veh) * cfg.dt) / 3.6e6;
+    if (back) {
+      T.electricPowerGrad(u, env, veh, pg);
+      const e = (cfg.wEnergy * cfg.dt) / 3.6e6;
+      gu.q += e * pg.q;
+      gu.local += e * env.occupants * (heating ? veh.seatHeatW : -veh.seatVentW);
+    }
+    j += comfortTerm(s, env, u, cfg.wComfort * minutes, cfg.wComfortLin * minutes, back, gu);
+    if (i >= 3) {
+      const a = s.ta < cfg.airMin ? s.ta - cfg.airMin : s.ta > cfg.airMax ? s.ta - cfg.airMax : 0;
+      if (a !== 0) {
+        j += cfg.wAir * a * a * minutes;
+        if (back) lam.ta += 2 * cfg.wAir * a * minutes;
+      }
+    }
+    const fog = cfg.fogLimit - T.fogMargin(s);
+    if (fog > 0) {
+      j += cfg.wFog * fog * fog * minutes;
+      if (back) {
+        const g = 2 * cfg.wFog * fog * minutes;
+        lam.tw -= g;
+        lam.w += g * T.dDewPoint(s.w);
+      }
+    }
+    const over = (s.co2 - cfg.co2Target) / 100;
+    if (over > 0) {
+      j += cfg.wCo2 * over * over * minutes;
+      if (back) lam.co2 += (2 * cfg.wCo2 * over * minutes) / 100;
+    }
+    return j;
+  }
+
+  function evaluate(z, grad) {
+    for (let k = 0; k < blocks; k++) decode(z, k, veh, heating, cfg.localMax, us[k]);
+    Object.assign(traj[0], s0);
+    let j = 0;
+    for (let i = 0; i < steps; i++) {
+      const u = us[blockOf(i)];
+      T.step(traj[i], u, envs[i], cfg.dt, veh, traj[i + 1]);
+      j += stage(i, traj[i + 1], u, envs[i], false, null);
+    }
+    for (let k = 0; k < used; k++) {
+      if (k > 0) {
+        const dq = (us[k].q - us[k - 1].q) / 1000;
+        j += cfg.wSmooth * dq * dq;
+      }
+      const prev = k > 0 ? us[k - 1].local : prevLocal;
+      if (prev !== undefined) j += cfg.wLocalSmooth * (us[k].local - prev) * (us[k].local - prev);
+    }
+    const last = us[blockOf(steps - 1)];
+    if (continues) j += comfortTerm(traj[steps], envs[steps - 1], last, cfg.wTerminal, 0, false, null);
+    if (!grad) return j;
+
+    for (const g of gus) g.q = g.recirc = g.local = g.defrost = 0;
+    lam.ta = lam.tm = lam.tw = lam.tg = lam.ts = lam.w = lam.co2 = 0;
+    if (continues) comfortTerm(traj[steps], envs[steps - 1], last, cfg.wTerminal, 0, true, gus[blockOf(steps - 1)]);
+    for (let i = steps - 1; i >= 0; i--) {
+      const k = blockOf(i);
+      stage(i, traj[i + 1], us[k], envs[i], true, gus[k]);
+      T.stepAdjoint(traj[i], traj[i + 1], us[k], envs[i], cfg.dt, veh, lam, gus[k]);
+    }
+    for (let k = 0; k < used; k++) {
+      if (k > 0) {
+        const g = (2 * cfg.wSmooth * (us[k].q - us[k - 1].q)) / 1e6;
+        gus[k].q += g;
+        gus[k - 1].q -= g;
+      }
+      const prev = k > 0 ? us[k - 1].local : prevLocal;
+      if (prev !== undefined) {
+        const g = 2 * cfg.wLocalSmooth * (us[k].local - prev);
+        gus[k].local += g;
+        if (k > 0) gus[k - 1].local -= g;
+      }
+    }
+    for (let k = 0; k < blocks; k++) {
+      grad[NV * k] = gus[k].q * (heating ? veh.qHeatMax : -veh.qCoolMax);
+      grad[NV * k + 1] = gus[k].recirc * 0.9;
+      grad[NV * k + 2] = gus[k].local * (heating ? cfg.localMax : -cfg.localMax);
+      grad[NV * k + 3] = gus[k].defrost;
+    }
+    return j;
+  }
+
+  return { n, blocks, evaluate, us };
+}
+
+function projectedGradientNorm(z, g, lo, hi) {
+  let m = 0;
+  for (let i = 0; i < z.length; i++) {
+    const p = Math.min(hi[i], Math.max(lo[i], z[i] - g[i])) - z[i];
+    if (Math.abs(p) > m) m = Math.abs(p);
+  }
+  return m;
+}
+
+function spg(evaluate, z, lo, hi, maxIter, tol, memory) {
+  const n = z.length;
+  const g = new Float64Array(n);
+  const gNew = new Float64Array(n);
+  const d = new Float64Array(n);
+  const trial = new Float64Array(n);
+  const hist = [];
+  let f = evaluate(z, g);
+  let evals = 1;
+  let pgn = projectedGradientNorm(z, g, lo, hi);
+  let alpha = pgn > 0 ? Math.min(1e3, 1 / pgn) : 1;
+  let iter = 0;
+  for (; iter < maxIter && pgn > tol; iter++) {
+    hist.push(f);
+    if (hist.length > memory) hist.shift();
+    let fRef = hist[0];
+    for (const h of hist) if (h > fRef) fRef = h;
+    let gtd = 0;
+    for (let i = 0; i < n; i++) {
+      d[i] = Math.min(hi[i], Math.max(lo[i], z[i] - alpha * g[i])) - z[i];
+      gtd += g[i] * d[i];
+    }
+    let t = 1;
+    let fNew = f;
+    let ok = false;
+    for (let tries = 0; tries < 20; tries++) {
+      for (let i = 0; i < n; i++) trial[i] = z[i] + t * d[i];
+      fNew = evaluate(trial, gNew);
+      evals++;
+      if (fNew <= fRef + 1e-4 * t * gtd) {
+        ok = true;
+        break;
+      }
+      t *= 0.5;
+    }
+    if (!ok) break;
+    let ss = 0;
+    let sy = 0;
+    for (let i = 0; i < n; i++) {
+      const s = trial[i] - z[i];
+      ss += s * s;
+      sy += s * (gNew[i] - g[i]);
+      z[i] = trial[i];
+      g[i] = gNew[i];
+    }
+    f = fNew;
+    alpha = sy > 1e-16 ? Math.min(1e6, Math.max(1e-6, ss / sy)) : 1e6;
+    pgn = projectedGradientNorm(z, g, lo, hi);
+  }
+  return { cost: f, iterations: iter, evaluations: evals, residual: pgn };
+}
+
+function pqn(evaluate, z, lo, hi, maxIter, tol, memory) {
+  const n = z.length;
+  const g = new Float64Array(n);
+  const gNew = new Float64Array(n);
+  const d = new Float64Array(n);
+  const trial = new Float64Array(n);
+  const free = new Uint8Array(n);
+  const S = [];
+  const Y = [];
+  const rho = [];
+  const a = new Float64Array(memory);
+  let f = evaluate(z, g);
+  let evals = 1;
+  let pgn = projectedGradientNorm(z, g, lo, hi);
+  let iter = 0;
+  for (; iter < maxIter && pgn > tol; iter++) {
+    for (let i = 0; i < n; i++) {
+      free[i] = (z[i] <= lo[i] + 1e-12 && g[i] > 0) || (z[i] >= hi[i] - 1e-12 && g[i] < 0) ? 0 : 1;
+      d[i] = free[i] ? -g[i] : 0;
+    }
+    for (let k = S.length - 1; k >= 0; k--) {
+      let dot = 0;
+      for (let i = 0; i < n; i++) dot += S[k][i] * d[i];
+      a[k] = rho[k] * dot;
+      for (let i = 0; i < n; i++) d[i] -= a[k] * Y[k][i];
+    }
+    if (S.length) {
+      const k = S.length - 1;
+      let yy = 0;
+      for (let i = 0; i < n; i++) yy += Y[k][i] * Y[k][i];
+      const scale = 1 / (rho[k] * yy);
+      for (let i = 0; i < n; i++) d[i] *= scale;
+    }
+    for (let k = 0; k < S.length; k++) {
+      let dot = 0;
+      for (let i = 0; i < n; i++) dot += Y[k][i] * d[i];
+      const b = rho[k] * dot;
+      for (let i = 0; i < n; i++) d[i] += (a[k] - b) * S[k][i];
+    }
+    let gd = 0;
+    for (let i = 0; i < n; i++) {
+      if (!free[i]) d[i] = 0;
+      gd += g[i] * d[i];
+    }
+    if (!(gd < 0)) {
+      S.length = Y.length = rho.length = 0;
+      for (let i = 0; i < n; i++) d[i] = free[i] ? -g[i] : 0;
+    }
+    let t = S.length ? 1 : Math.min(1, 1 / (pgn + 1e-12));
+    let fNew = f;
+    let ok = false;
+    for (let tries = 0; tries < 30; tries++) {
+      let dec = 0;
+      for (let i = 0; i < n; i++) {
+        trial[i] = Math.min(hi[i], Math.max(lo[i], z[i] + t * d[i]));
+        dec += g[i] * (trial[i] - z[i]);
+      }
+      fNew = evaluate(trial, gNew);
+      evals++;
+      if (fNew <= f + 1e-4 * dec) {
+        ok = true;
+        break;
+      }
+      t *= 0.5;
+    }
+    if (!ok) {
+      if (!S.length) break;
+      S.length = Y.length = rho.length = 0;
+      continue;
+    }
+    const s = new Float64Array(n);
+    const y = new Float64Array(n);
+    let sy = 0;
+    for (let i = 0; i < n; i++) {
+      s[i] = trial[i] - z[i];
+      y[i] = gNew[i] - g[i];
+      sy += s[i] * y[i];
+      z[i] = trial[i];
+      g[i] = gNew[i];
+    }
+    if (sy > 1e-12) {
+      S.push(s);
+      Y.push(y);
+      rho.push(1 / sy);
+      if (S.length > memory) {
+        S.shift();
+        Y.shift();
+        rho.shift();
+      }
+    }
+    f = fNew;
+    pgn = projectedGradientNorm(z, g, lo, hi);
+  }
+  return { cost: f, iterations: iter, evaluations: evals, residual: pgn };
+}
+
+function plan(s0, envAt, remainingSteps, opts = {}) {
+  const cfg = { ...DEFAULTS, ...opts.config };
+  const veh = opts.vehicle || T.VEHICLE;
+  const env0 = envAt(0);
+  const target = opts.target !== undefined ? opts.target : C.targetFor(env0.tAmb);
+  const heating = opts.heating !== undefined ? opts.heating : env0.tAmb < target - 2;
+  const steps = Math.max(1, Math.min(cfg.horizon, remainingSteps));
+  const continues = remainingSteps > cfg.horizon;
+  const prob = createProblem(s0, envAt, steps, target, veh, cfg, heating, continues, opts.prevLocal);
+  const n = prob.n;
+  const z = new Float64Array(n);
+  if (opts.warm && opts.warm.length === n) {
+    for (let k = 0; k < prob.blocks; k++) {
+      const src = Math.min(k + 1, prob.blocks - 1);
+      for (let c = 0; c < NV; c++) z[NV * k + c] = opts.warm[NV * src + c];
+    }
+  } else {
+    for (let k = 0; k < prob.blocks; k++) {
+      z[NV * k] = 0.4;
+      z[NV * k + 1] = 0.3;
+      z[NV * k + 2] = 0.3;
+      z[NV * k + 3] = 0.2;
+    }
+  }
+  const lo = new Float64Array(n);
+  const hi = new Float64Array(n).fill(1);
+  const solver = cfg.solver === 'spg' ? spg : pqn;
+  const main = solver(prob.evaluate, z, lo, hi, cfg.iterations, cfg.tolerance, cfg.memory);
+  let best = { ...main };
+  let evaluations = main.evaluations;
+  let iterations = main.iterations;
+
+  const level = z[2] * cfg.localMax;
+  if (Math.abs(level - Math.round(level)) > 1e-6) {
+    const relaxed = Float64Array.from(z);
+    let pick = null;
+    for (const cand of [Math.floor(level), Math.ceil(level)]) {
+      const zc = Float64Array.from(relaxed);
+      zc[2] = cand / cfg.localMax;
+      lo[2] = hi[2] = zc[2];
+      const r = solver(prob.evaluate, zc, lo, hi, cfg.iterations, cfg.tolerance, cfg.memory);
+      evaluations += r.evaluations;
+      iterations += r.iterations;
+      if (!pick || r.cost < pick.cost) pick = { ...r, z: zc };
+    }
+    z.set(pick.z);
+    best = pick;
+  }
+  const first = decode(z, 0, veh, heating, cfg.localMax);
+  first.local = Math.round(first.local);
+  if (Math.abs(first.q) < 150) first.q = 0;
+  return { control: first, z, cost: best.cost, residual: best.residual, relaxedCost: main.cost, relaxedResidual: main.residual, iterations, evaluations, target, heating, steps };
+}
+
+module.exports = { DEFAULTS, NV, plan, createProblem, spg, pqn, decode, projectedGradientNorm };
+
+};
+__defs["gate"] = function (module, exports, require) {
+'use strict';
+
+const GEARS = ['P', 'R', 'N', 'D'];
+const SEATS = ['driver', 'passenger', 'rearLeft', 'rearRight'];
+const SOURCES = ['user', 'ai', 'mpc'];
+
+const LIMITS = Object.freeze({
+  tempMin: 17,
+  tempMax: 30,
+  qMin: -6000,
+  qMax: 5500,
+  fogHard: 0.5,
+  fogSoft: 1.5,
+  co2Soft: 1500,
+  windowSpeed: 100,
+  windowMaxFast: 20,
+  childSeatHeat: 1,
+  defrostFloor: 0.5,
+});
+
+function finite(x) {
+  return typeof x === 'number' && Number.isFinite(x);
+}
+
+function allow(command) {
+  return { verdict: 'allow', command, reason: null };
+}
+
+function clampTo(command, reason) {
+  return { verdict: 'clamp', command, reason };
+}
+
+function deny(reason) {
+  return { verdict: 'deny', command: null, reason };
+}
+
+function recircCeiling(v) {
+  if (v.fogMargin < LIMITS.fogHard) return 0;
+  let cap = 0.9;
+  if (v.fogMargin < LIMITS.fogSoft) cap = Math.min(cap, 0.3);
+  if (v.co2 > LIMITS.co2Soft) cap = Math.min(cap, 0.2);
+  return cap;
+}
+
+function decide(cmd, v, source) {
+  if (!cmd || typeof cmd.type !== 'string') return deny('명령 형식이 올바르지 않습니다.');
+  if (!SOURCES.includes(source)) return deny('출처를 알 수 없는 명령입니다.');
+  if (!finite(v.speed) || !GEARS.includes(v.gear) || !finite(v.fogMargin) || !finite(v.co2))
+    return deny('차량 상태를 읽지 못해 명령을 보류합니다.');
+  const moving = v.speed > 0 || v.gear !== 'P';
+  const auto = source !== 'user';
+
+  switch (cmd.type) {
+    case 'hvac.setTemp': {
+      if (!finite(cmd.value)) return deny('온도 값이 숫자가 아닙니다.');
+      const value = Math.min(LIMITS.tempMax, Math.max(LIMITS.tempMin, cmd.value));
+      const out = { type: cmd.type, value };
+      return value === cmd.value ? allow(out) : clampTo(out, `설정 온도는 ${LIMITS.tempMin}~${LIMITS.tempMax}°C 범위로 맞춥니다.`);
+    }
+    case 'hvac.power': {
+      if (!finite(cmd.value)) return deny('열량 값이 숫자가 아닙니다.');
+      const value = Math.min(LIMITS.qMax, Math.max(LIMITS.qMin, cmd.value));
+      const out = { type: cmd.type, value };
+      return value === cmd.value ? allow(out) : clampTo(out, '공조 출력 한계로 맞춥니다.');
+    }
+    case 'hvac.recirc': {
+      if (!finite(cmd.value)) return deny('내기 순환 값이 숫자가 아닙니다.');
+      const cap = recircCeiling(v);
+      const value = Math.min(cap, Math.max(0, cmd.value));
+      const out = { type: cmd.type, value };
+      if (value === cmd.value) return allow(out);
+      if (cmd.value < 0) return clampTo(out, '내기 순환 비율은 0 이상입니다.');
+      return clampTo(out, v.fogMargin < LIMITS.fogSoft ? '앞유리 김서림 여유가 부족해 외기를 더 들입니다.' : v.co2 > LIMITS.co2Soft ? '실내 CO2 가 높아 외기를 더 들입니다.' : '내기 순환은 90%까지입니다.');
+    }
+    case 'hvac.defrost': {
+      if (typeof cmd.on !== 'boolean') return deny('성에 제거 값이 올바르지 않습니다.');
+      if (!cmd.on && v.fogMargin < LIMITS.fogSoft) return deny('김서림 여유가 부족해 성에 제거를 끌 수 없습니다.');
+      return allow({ type: cmd.type, on: cmd.on });
+    }
+    case 'hvac.defrostShare': {
+      if (!finite(cmd.value)) return deny('성에 제거 풍량 값이 숫자가 아닙니다.');
+      const floor = v.fogMargin < LIMITS.fogSoft ? LIMITS.defrostFloor : 0;
+      const value = Math.min(1, Math.max(floor, cmd.value));
+      const out = { type: cmd.type, value };
+      if (value === cmd.value) return allow(out);
+      return clampTo(out, cmd.value < floor && floor > 0 ? '김서림 여유가 부족해 앞유리 쪽 풍량을 절반 이상으로 유지합니다.' : '성에 제거 풍량은 0~100% 입니다.');
+    }
+    case 'seat.heat': {
+      if (!SEATS.includes(cmd.seat) || !finite(cmd.level)) return deny('좌석 또는 단수가 올바르지 않습니다.');
+      let level = Math.round(Math.min(3, Math.max(-3, cmd.level)));
+      let reason = level === cmd.level ? null : '시트 단수는 -3~3 사이 정수로 맞춥니다.';
+      if (level !== 0 && !v.occupied[cmd.seat]) {
+        level = 0;
+        reason = '빈 좌석에는 켜지 않습니다.';
+      } else if (level > LIMITS.childSeatHeat && v.child[cmd.seat]) {
+        level = LIMITS.childSeatHeat;
+        reason = '어린이 좌석 열선은 1단까지입니다.';
+      }
+      const out = { type: cmd.type, seat: cmd.seat, level };
+      return reason ? clampTo(out, reason) : allow(out);
+    }
+    case 'seat.position': {
+      if (!SEATS.includes(cmd.seat) || !finite(cmd.delta)) return deny('좌석 또는 이동량이 올바르지 않습니다.');
+      if (cmd.seat === 'driver' && moving) return deny('주행 중에는 운전석 위치를 바꾸지 않습니다.');
+      if (auto && v.occupied[cmd.seat]) return deny('사람이 앉은 좌석은 자동으로 움직이지 않습니다.');
+      return allow({ type: cmd.type, seat: cmd.seat, delta: Math.min(50, Math.max(-50, cmd.delta)) });
+    }
+    case 'window.open': {
+      if (!SEATS.includes(cmd.seat) || !finite(cmd.percent)) return deny('창문 또는 개방량이 올바르지 않습니다.');
+      let percent = Math.min(100, Math.max(0, cmd.percent));
+      let reason = percent === cmd.percent ? null : '창문 개방은 0~100% 입니다.';
+      if (v.speed >= LIMITS.windowSpeed && percent > LIMITS.windowMaxFast) {
+        percent = LIMITS.windowMaxFast;
+        reason = `시속 ${LIMITS.windowSpeed}km 이상에서는 창문을 ${LIMITS.windowMaxFast}%까지만 엽니다.`;
+      }
+      if (auto && v.rain && percent > 0) return deny('비가 올 때는 자동으로 창문을 열지 않습니다.');
+      const out = { type: cmd.type, seat: cmd.seat, percent };
+      return reason ? clampTo(out, reason) : allow(out);
+    }
+    case 'door.unlock':
+    case 'door.open': {
+      if (moving) return deny('주행 중이거나 P 단이 아니면 문을 열거나 잠금을 풀지 않습니다.');
+      if (auto) return deny('문은 사람이 직접 조작합니다.');
+      return allow({ type: cmd.type });
+    }
+    case 'wiper.set': {
+      if (!['off', 'auto', 'low', 'high'].includes(cmd.mode)) return deny('와이퍼 모드가 올바르지 않습니다.');
+      if (cmd.mode === 'off' && v.rain && moving) return deny('비가 오는 주행 중에는 와이퍼를 끄지 않습니다.');
+      return allow({ type: cmd.type, mode: cmd.mode });
+    }
+    default:
+      return deny('허용 목록에 없는 명령입니다.');
+  }
+}
+
+function createLimiter(maxPerWindow = 6, windowMs = 10000) {
+  const stamps = [];
+  return function admit(nowMs) {
+    while (stamps.length && nowMs - stamps[0] >= windowMs) stamps.shift();
+    if (stamps.length >= maxPerWindow) return false;
+    stamps.push(nowMs);
+    return true;
+  };
+}
+
+module.exports = { GEARS, SEATS, SOURCES, LIMITS, decide, recircCeiling, createLimiter };
+
+};
+__defs["verify"] = function (module, exports, require) {
+'use strict';
+
+const G = require('./gate');
+
+const INVARIANTS = [
+  {
+    id: 'I1',
+    text: '주행 중이거나 P 단이 아니면 문 열림·잠금 해제가 실행되지 않는다',
+    bad: (c, v) => (c.type === 'door.open' || c.type === 'door.unlock') && (v.speed > 0 || v.gear !== 'P'),
+  },
+  {
+    id: 'I2',
+    text: '사람이 낸 명령이 아니면 문은 어떤 상태에서도 열리지 않는다',
+    bad: (c, v, src) => (c.type === 'door.open' || c.type === 'door.unlock') && src !== 'user',
+  },
+  {
+    id: 'I3',
+    text: '주행 중에는 운전석 위치가 바뀌지 않는다',
+    bad: (c, v) => c.type === 'seat.position' && c.seat === 'driver' && (v.speed > 0 || v.gear !== 'P') && c.delta !== 0,
+  },
+  {
+    id: 'I4',
+    text: '시속 100km 이상에서 창문이 20% 넘게 열리지 않는다',
+    bad: (c, v) => c.type === 'window.open' && v.speed >= 100 && c.percent > 20,
+  },
+  {
+    id: 'I5',
+    text: '김서림 여유가 0.5K 미만이면 내기 순환이 실행되지 않는다',
+    bad: (c, v) => c.type === 'hvac.recirc' && v.fogMargin < 0.5 && c.value > 0,
+  },
+  {
+    id: 'I6',
+    text: '김서림 여유가 1.5K 미만이면 내기 순환이 30% 를 넘지 않고, 성에 제거가 꺼지지 않으며, 앞유리 풍량이 50% 아래로 내려가지 않는다',
+    bad: (c, v) => v.fogMargin < 1.5 && ((c.type === 'hvac.recirc' && c.value > 0.3) || (c.type === 'hvac.defrost' && c.on === false) || (c.type === 'hvac.defrostShare' && c.value < 0.5)),
+  },
+  {
+    id: 'I7',
+    text: 'CO2 가 1500ppm 을 넘으면 내기 순환이 20% 를 넘지 않는다',
+    bad: (c, v) => c.type === 'hvac.recirc' && v.co2 > 1500 && c.value > 0.2,
+  },
+  {
+    id: 'I8',
+    text: '비가 오는 주행 중에는 와이퍼가 꺼지지 않고, 자동 명령으로 창문이 열리지 않는다',
+    bad: (c, v, src) =>
+      v.rain && ((c.type === 'wiper.set' && c.mode === 'off' && (v.speed > 0 || v.gear !== 'P')) || (c.type === 'window.open' && src !== 'user' && c.percent > 0)),
+  },
+  {
+    id: 'I9',
+    text: '설정 온도, 공조 출력, 시트 단수, 창문 개방량이 항상 유한한 값이고 허용 범위 안이다',
+    bad: (c) =>
+      (c.type === 'hvac.setTemp' && !(c.value >= 17 && c.value <= 30)) ||
+      (c.type === 'hvac.power' && !(c.value >= -6000 && c.value <= 5500)) ||
+      (c.type === 'hvac.recirc' && !(c.value >= 0 && c.value <= 0.9)) ||
+      (c.type === 'hvac.defrostShare' && !(c.value >= 0 && c.value <= 1)) ||
+      (c.type === 'seat.heat' && !(Number.isInteger(c.level) && c.level >= -3 && c.level <= 3)) ||
+      (c.type === 'window.open' && !(c.percent >= 0 && c.percent <= 100)),
+  },
+  {
+    id: 'I10',
+    text: '빈 좌석 열선은 켜지지 않고, 어린이 좌석 열선은 1단을 넘지 않는다',
+    bad: (c, v) => c.type === 'seat.heat' && ((c.level !== 0 && !v.occupied[c.seat]) || (c.level > 1 && v.child[c.seat])),
+  },
+  {
+    id: 'I11',
+    text: '허용 목록에 없는 명령과 차량 상태를 읽지 못한 경우의 명령은 실행되지 않는다',
+    bad: (c, v) => !KNOWN.has(c.type) || !Number.isFinite(v.speed) || !Number.isFinite(v.fogMargin) || !Number.isFinite(v.co2),
+  },
+];
+
+const KNOWN = new Set(['hvac.setTemp', 'hvac.power', 'hvac.recirc', 'hvac.defrost', 'hvac.defrostShare', 'seat.heat', 'seat.position', 'window.open', 'door.unlock', 'door.open', 'wiper.set']);
+
+const ODD = [NaN, Infinity, -Infinity, null, undefined, '22', {}];
+
+function commandGrid() {
+  const out = [];
+  const nums = (list) => list.concat(ODD);
+  for (const value of nums([-40, 16.9, 17, 22, 30, 30.1, 99])) out.push({ type: 'hvac.setTemp', value });
+  for (const value of nums([-9000, -6000, 0, 5500, 5501, 1e9])) out.push({ type: 'hvac.power', value });
+  for (const value of nums([-1, 0, 0.1, 0.2, 0.21, 0.3, 0.31, 0.9, 1, 5])) out.push({ type: 'hvac.recirc', value });
+  for (const on of [true, false, 0, 'off', null]) out.push({ type: 'hvac.defrost', on });
+  for (const value of nums([-1, 0, 0.3, 0.49, 0.5, 1, 4])) out.push({ type: 'hvac.defrostShare', value });
+  for (const seat of G.SEATS.concat(['trunk', null]))
+    for (const level of nums([-5, -3, -1, 0, 1, 2, 3, 2.6, 7])) out.push({ type: 'seat.heat', seat, level });
+  for (const seat of G.SEATS.concat(['trunk'])) for (const delta of nums([-500, -10, 0, 10, 500])) out.push({ type: 'seat.position', seat, delta });
+  for (const seat of G.SEATS.concat(['roof'])) for (const percent of nums([-10, 0, 10, 20, 21, 50, 100, 300])) out.push({ type: 'window.open', seat, percent });
+  out.push({ type: 'door.unlock' }, { type: 'door.open' });
+  for (const mode of ['off', 'auto', 'low', 'high', 'turbo', null]) out.push({ type: 'wiper.set', mode });
+
+  out.push({ type: 'brake.release' }, { type: 'steering.turn', value: 30 }, { type: 'door.openAll' }, { type: '' }, { type: 42 }, {}, null, 'door.open');
+  return out;
+}
+
+function stateGrid(level) {
+  const speeds = level === 'full' ? [0, 0.5, 30, 99.9, 100, 130, 250, NaN] : [0, 30, 100, NaN];
+  const fogs = level === 'full' ? [-5, 0.49, 0.5, 1.49, 1.5, 8, NaN] : [0.49, 1.49, 8];
+  const co2s = level === 'full' ? [420, 1500, 1501, 5000, NaN] : [420, 1501];
+  const seatSets = level === 'full' ? 16 : 4;
+  const out = [];
+  for (const speed of speeds)
+    for (const gear of G.GEARS)
+      for (const fogMargin of fogs)
+        for (const co2 of co2s)
+          for (const rain of [false, true])
+            for (let occ = 0; occ < seatSets; occ++)
+              for (const kids of [0, 0b0100, 0b1100]) {
+                const bits = level === 'full' ? occ : [0b0001, 0b0011, 0b0111, 0b1111][occ];
+                const occupied = {};
+                const child = {};
+                G.SEATS.forEach((seat, i) => {
+                  occupied[seat] = Boolean(bits & (1 << i));
+                  child[seat] = Boolean(kids & (1 << i)) && occupied[seat];
+                });
+                out.push({ speed, gear, fogMargin, co2, rain, occupied, child });
+              }
+  return out;
+}
+
+function run(level = 'full', decide = G.decide) {
+  const commands = commandGrid();
+  const states = stateGrid(level);
+  const counts = { allow: 0, clamp: 0, deny: 0 };
+  const samples = [];
+  let violations = 0;
+  let checked = 0;
+  for (const v of states)
+    for (const cmd of commands)
+      for (const source of G.SOURCES) {
+        checked++;
+        let res;
+        try {
+          res = decide(cmd, v, source);
+        } catch (error) {
+          violations++;
+          if (samples.length < 5) samples.push({ id: 'crash', cmd, v, source, message: String(error) });
+          continue;
+        }
+        counts[res.verdict]++;
+        if (res.verdict === 'deny') continue;
+        for (const inv of INVARIANTS)
+          if (inv.bad(res.command, v, source)) {
+            violations++;
+            if (samples.length < 5) samples.push({ id: inv.id, cmd, v, source, effective: res.command });
+          }
+      }
+  return { checked, states: states.length, commands: commands.length, counts, violations, samples, invariants: INVARIANTS.length };
+}
+
+module.exports = { INVARIANTS, run, commandGrid, stateGrid };
+
+};
+__defs["blackice"] = function (module, exports, require) {
+'use strict';
+
+const SIGMA = 5.670374e-8;
+const KELVIN = 273.15;
+
+const SURFACES = Object.freeze({
+  road: { name: '일반 도로', capacity: 1.6e5, ground: 7.0, convection: 1.0 },
+  bridge: { name: '교량·고가', capacity: 0.6e5, ground: 0.0, convection: 1.8 },
+});
+
+const DEFAULTS = Object.freeze({
+  particles: 600,
+  seed: 20261115,
+  latitude: 37.3,
+  hoursBack: 8,
+  stepSeconds: 300,
+  depositionWindowHours: 3,
+  slipLikelihoodRatio: 8,
+});
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function next() {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function gaussian(rnd) {
+  const u = Math.max(rnd(), 1e-12);
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rnd());
+}
+
+function sinElevation(dayOfYear, hour, latitude) {
+  const decl = (-23.44 * Math.PI) / 180 * Math.cos((2 * Math.PI * (dayOfYear + 10)) / 365);
+  const lat = (latitude * Math.PI) / 180;
+  const hourAngle = ((hour - 12) * 15 * Math.PI) / 180;
+  return Math.sin(lat) * Math.sin(decl) + Math.cos(lat) * Math.cos(decl) * Math.cos(hourAngle);
+}
+
+function clearSkyIrradiance(sinEl) {
+  return sinEl > 0.01 ? 1098 * sinEl * Math.exp(-0.057 / sinEl) : 0;
+}
+
+function skyEmissivity(tDew, cloud) {
+  const x = tDew / 100;
+  const clear = 0.711 + 0.56 * x + 0.73 * x * x;
+  return clear + (1 - clear) * 0.84 * cloud;
+}
+
+function diurnal(hour) {
+  return Math.cos((2 * Math.PI * (hour - 15)) / 24);
+}
+
+function stepSurface(ts, tAir, tSkyK, solar, tDeep, wind, surface, dt) {
+  const hc = (5.8 + 4.1 * wind) * surface.convection;
+  const mean = ts + KELVIN;
+  const hr = 4 * 0.95 * SIGMA * mean * mean * mean;
+  const c = surface.capacity / dt;
+  return (c * ts + hc * tAir + hr * (tSkyK - KELVIN) + surface.ground * tDeep + solar) / (c + hc + hr + surface.ground);
+}
+
+function sample(obs, rnd) {
+  const sky = obs.sky || 'unknown';
+  const cloud = sky === 'clear' ? 0.25 * rnd() : sky === 'overcast' ? 0.75 + 0.25 * rnd() : rnd();
+  const bias = Math.max(-0.5, 0.5 + 0.7 * gaussian(rnd));
+  const tAir = obs.outsideTemp - bias;
+  let depression;
+  if (obs.humidity !== undefined && obs.humidity !== null) {
+    const rh = Math.min(1, Math.max(0.05, obs.humidity + 0.05 * gaussian(rnd)));
+    depression = Math.max(0, ((100 - 100 * rh) / 5) * (1 + 0.15 * gaussian(rnd)));
+  } else {
+    depression = 0.3 + 7.7 * rnd() * rnd();
+  }
+  return {
+    cloud,
+    tAir,
+    tDew: tAir - depression,
+    wind: obs.wind !== undefined && obs.wind !== null ? Math.max(0.2, obs.wind * (1 + 0.25 * gaussian(rnd))) : 0.5 + 5.5 * rnd(),
+    amplitude: 4 + 8 * rnd(),
+    deepOffset: -1 + 8 * rnd(),
+    shade: 0.6 + 0.4 * rnd(),
+    residualWet: rnd() < (obs.recentRain ? 0.6 : 0.15),
+    modelError: 1.2 * gaussian(rnd),
+  };
+}
+
+function runParticle(p, obs, surface, cfg) {
+  const steps = Math.round((cfg.hoursBack * 3600) / cfg.stepSeconds);
+  const windowSteps = Math.round((cfg.depositionWindowHours * 3600) / cfg.stepSeconds);
+  const day = obs.dayOfYear !== undefined ? obs.dayOfYear : 319;
+  const shapeNow = diurnal(obs.hour);
+  const mean = p.tAir - (p.amplitude / 2) * shapeNow;
+  const tDeep = mean + p.deepOffset;
+  const eps = skyEmissivity(p.tDew, p.cloud);
+  let ts = p.tAir;
+  let deposited = false;
+  let wasAbove = false;
+  for (let warm = 0; warm < 2; warm++) {
+    for (let i = steps; i >= 0; i--) {
+      const hour = (((obs.hour - (i * cfg.stepSeconds) / 3600) % 24) + 24) % 24;
+      const tAir = p.tAir + (p.amplitude / 2) * (diurnal(hour) - shapeNow);
+      const tSkyK = Math.pow(eps, 0.25) * (tAir + KELVIN);
+      const solar = 0.88 * p.shade * (1 - 0.75 * Math.pow(p.cloud, 3)) * clearSkyIrradiance(sinElevation(day, hour, cfg.latitude));
+      ts = stepSurface(ts, tAir, tSkyK, solar, tDeep, p.wind, surface, cfg.stepSeconds);
+      if (warm === 1 && i <= windowSteps) {
+        if (ts < Math.min(p.tDew, tAir)) deposited = true;
+        if (ts > 0.5) wasAbove = true;
+      }
+    }
+  }
+  ts += p.modelError;
+  const wet = Boolean(obs.raining) || p.residualWet;
+  const frozen = ts <= 0;
+  return { ts, frozen, ice: frozen && (wet || deposited), cause: !frozen ? null : obs.raining ? 'rain' : deposited ? 'frost' : wet ? (wasAbove ? 'refreeze' : 'wet') : null };
+}
+
+function quantile(sorted, q) {
+  const i = (sorted.length - 1) * q;
+  const lo = Math.floor(i);
+  const hi = Math.ceil(i);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (i - lo);
+}
+
+function applySlip(p, slipEvents, ratio) {
+  if (!slipEvents) return p;
+  const odds = (Math.min(Math.max(p, 1e-4), 1 - 1e-4) / (1 - Math.min(Math.max(p, 1e-4), 1 - 1e-4))) * Math.pow(ratio, slipEvents);
+  return odds / (1 + odds);
+}
+
+function estimate(obs, surfaceKey, cfg) {
+  const surface = SURFACES[surfaceKey];
+  const rnd = mulberry32(cfg.seed);
+  const temps = [];
+  const byCloud = { clear: [0, 0], partly: [0, 0], overcast: [0, 0] };
+  const causes = { rain: 0, frost: 0, refreeze: 0, wet: 0 };
+  let ice = 0;
+  let frozen = 0;
+  for (let i = 0; i < cfg.particles; i++) {
+    const p = sample(obs, rnd);
+    const r = runParticle(p, obs, surface, cfg);
+    temps.push(r.ts);
+    if (r.frozen) frozen++;
+    if (r.ice) {
+      ice++;
+      causes[r.cause]++;
+    }
+    const bin = p.cloud < 1 / 3 ? 'clear' : p.cloud < 2 / 3 ? 'partly' : 'overcast';
+    byCloud[bin][0] += r.ice ? 1 : 0;
+    byCloud[bin][1]++;
+  }
+  temps.sort((a, b) => a - b);
+  const prior = ice / cfg.particles;
+  const probability = applySlip(prior, obs.slipEvents, cfg.slipLikelihoodRatio);
+  const cond = {};
+  for (const [k, [a, b]] of Object.entries(byCloud)) cond[k] = b >= 20 ? applySlip(a / b, obs.slipEvents, cfg.slipLikelihoodRatio) : null;
+  let mainCause = null;
+  for (const [k, v] of Object.entries(causes)) if (v > 0 && (mainCause === null || v > causes[mainCause])) mainCause = k;
+  return {
+    surface: surfaceKey,
+    probability,
+    standardError: Math.sqrt((prior * (1 - prior)) / cfg.particles),
+    frozenProbability: frozen / cfg.particles,
+    surfaceTemp: { p10: quantile(temps, 0.1), median: quantile(temps, 0.5), p90: quantile(temps, 0.9) },
+    byCloud: cond,
+    mainCause,
+  };
+}
+
+function levelOf(p) {
+  return p >= 0.6 ? 'danger' : p >= 0.3 ? 'warning' : p >= 0.1 ? 'caution' : 'low';
+}
+
+const LEVEL_TEXT = { danger: '위험', warning: '경고', caution: '주의', low: '낮음' };
+const CAUSE_TEXT = {
+  rain: '비나 눈이 영하의 노면에 닿아 바로 얼 수 있습니다.',
+  frost: '노면이 이슬점보다 차가워 서리가 내려앉을 조건입니다.',
+  refreeze: '젖은 노면이 영상에서 영하로 내려가며 다시 얼 조건입니다.',
+  wet: '남아 있는 물기가 영하의 노면에서 얼어 있을 수 있습니다.',
+};
+
+function pct(p) {
+  return Math.round(p * 100);
+}
+
+function assess(obs, options = {}) {
+  const cfg = { ...DEFAULTS, ...options };
+  if (!Number.isFinite(obs.outsideTemp) || !Number.isFinite(obs.hour)) throw new Error('outsideTemp 와 hour 가 필요합니다.');
+  const road = estimate(obs, 'road', cfg);
+  const bridge = estimate(obs, 'bridge', cfg);
+  const top = bridge.probability >= road.probability ? bridge : road;
+  const level = levelOf(top.probability);
+  const reasons = [];
+  if (top.mainCause && level !== 'low') reasons.push(CAUSE_TEXT[top.mainCause]);
+  if (obs.outsideTemp > 0 && top.probability >= 0.1)
+    reasons.push(`외기는 영상 ${obs.outsideTemp.toFixed(1)}°C 지만 노면은 더 차갑습니다. 추정 노면 온도 ${top.surfaceTemp.p10.toFixed(1)}~${top.surfaceTemp.p90.toFixed(1)}°C.`);
+  if (bridge.probability - road.probability >= 0.1) reasons.push(`교량·고가는 땅의 열을 받지 못해 먼저 업니다. 교량 ${pct(bridge.probability)}%, 일반 도로 ${pct(road.probability)}%.`);
+  const c = top.byCloud;
+  if ((obs.sky || 'unknown') === 'unknown' && c.clear !== null && c.overcast !== null && Math.abs(c.clear - c.overcast) >= 0.2)
+    reasons.push(`하늘 상태를 몰라 범위가 넓습니다. 맑으면 ${pct(c.clear)}%, 흐리면 ${pct(c.overcast)}%.`);
+  if (obs.slipEvents) reasons.push(`미끄러짐 감지 ${obs.slipEvents}회를 반영해 확률을 올렸습니다.`);
+  const headline =
+    level === 'low'
+      ? `결빙 신호가 약합니다(${pct(top.probability)}%). 안전하다는 뜻은 아닙니다.`
+      : `${SURFACES[top.surface].name} 결빙 가능성 ${pct(top.probability)}% · ${LEVEL_TEXT[level]}`;
+  const action = level === 'danger' ? '지금 속도를 줄이고 급제동·급조향을 피하세요.' : level === 'warning' ? '교량, 고가, 그늘, 터널 출구에서 미리 감속하세요.' : level === 'caution' ? '교량과 그늘진 구간을 조심하세요.' : '';
+  return { level, levelText: LEVEL_TEXT[level], headline, action, reasons, road, bridge };
+}
+
+function sweepTemperature(obs, temps, options = {}) {
+  return temps.map((t) => {
+    const r = assess({ ...obs, outsideTemp: t }, options);
+    return { outsideTemp: t, road: r.road.probability, bridge: r.bridge.probability };
+  });
+}
+
+module.exports = { SURFACES, DEFAULTS, assess, sweepTemperature, estimate, stepSurface, skyEmissivity, sinElevation, clearSkyIrradiance, levelOf, mulberry32 };
+
+};
+__defs["scenario"] = function (module, exports, require) {
+'use strict';
+
+const T = require('./thermal');
+const C = require('./comfort');
+const M = require('./mpc');
+const G = require('./gate');
+
+const BATTERY_KWH = 77;
+const PLANT_DT = 10;
+const COMFORT_TOL = 0.1;
+
+const PROFILES = {
+  winterCommute: {
+    name: '겨울 출근',
+    note: '영하 5도, 밤새 실외 주차, 혼자 35분',
+    minutes: 35,
+    tAmb: -5,
+    sun: 80,
+    rh: 0.7,
+    occupants: 1,
+    soakMinutes: 0,
+    speed: [
+      [0, 30],
+      [10, 80],
+      [30, 25],
+    ],
+  },
+  summerSoak: {
+    name: '여름 땡볕 주차 후',
+    note: '33도, 땡볕 90분 주차 뒤 2명이 30분',
+    minutes: 30,
+    tAmb: 33,
+    sun: 850,
+    rh: 0.6,
+    occupants: 2,
+    soakMinutes: 90,
+    speed: [
+      [0, 30],
+      [8, 70],
+      [26, 25],
+    ],
+  },
+  winterFamily: {
+    name: '겨울 가족 장거리',
+    note: '영하 8도 야간, 4명이 고속도로 90분',
+    minutes: 90,
+    tAmb: -8,
+    sun: 0,
+    rh: 0.8,
+    occupants: 4,
+    soakMinutes: 0,
+    speed: [
+      [0, 40],
+      [8, 100],
+      [84, 40],
+    ],
+  },
+};
+
+function speedAt(profile, tSec) {
+  const m = tSec / 60;
+  let kmh = profile.speed[0][1];
+  for (const [from, v] of profile.speed) if (m >= from) kmh = v;
+  return kmh;
+}
+
+function envAt(profile, tSec) {
+  return { tAmb: profile.tAmb, sun: profile.sun, rh: profile.rh, occupants: profile.occupants, speed: speedAt(profile, tSec) / 3.6 };
+}
+
+function drivePower(kmh) {
+  const v = kmh / 3.6;
+  const road = 0.5 * 1.25 * 0.62 * v * v * v + 2000 * 9.81 * 0.009 * v;
+  const stopGo = kmh < 50 ? 1.3 : 1.05;
+  return (road * stopGo) / 0.88 + 350;
+}
+
+function soak(profile, veh) {
+  let s = T.initialState(profile.tAmb, profile.rh);
+  const env = { tAmb: profile.tAmb, sun: profile.sun, rh: profile.rh, occupants: 0, speed: 0 };
+  const off = { q: 0, recirc: 0, local: 0, defrost: 0 };
+  for (let t = 0; t < profile.soakMinutes * 60; t += 30) s = T.step(s, off, env, 30, veh);
+  return s;
+}
+
+function vehicleView(s, kmh, profile) {
+  const seats = ['driver', 'passenger', 'rearLeft', 'rearRight'];
+  const occupied = {};
+  const child = {};
+  seats.forEach((seat, i) => {
+    occupied[seat] = i < profile.occupants;
+    child[seat] = false;
+  });
+  return { speed: kmh, gear: 'D', fogMargin: T.fogMargin(s), co2: s.co2, rain: false, occupied, child };
+}
+
+function baselineController(opts = {}) {
+  let integral = 0;
+  const seat = opts.seat || 0;
+  const heatRecirc = opts.recirc !== undefined ? opts.recirc : 0.2;
+  const heatDefrost = opts.defrost !== undefined ? opts.defrost : 0.15;
+  return {
+    name: seat ? `자동 공조 + 열선 ${seat}단` : '자동 공조',
+    interval: 10,
+    update(tSec, s, env, remaining, target, veh) {
+      const heating = env.tAmb < target - 2;
+      const local = heating ? seat : 0;
+      const err = target - C.equivalentTemp(s, env, local, veh);
+      let q = 1500 * err + integral;
+      const lo = heating ? 0 : -veh.qCoolMax;
+      const hi = heating ? veh.qHeatMax : 0;
+      if (q > lo && q < hi) integral += 5 * err * 10;
+      q = T.clamp(q, lo, hi);
+      return { q, recirc: heating ? heatRecirc : 0.6, local, defrost: heating ? heatDefrost : 0 };
+    },
+  };
+}
+
+function mirionController(opts = {}) {
+  let warm = null;
+  return {
+    name: '미리온',
+    interval: 60,
+    update(tSec, s, env, remaining, target, veh, profile) {
+      const cfg = { ...M.DEFAULTS, ...opts.config };
+      const res = M.plan(s, (i) => envAt(profile, tSec + i * cfg.dt), Math.ceil(remaining / cfg.dt), { target, vehicle: opts.model || veh, warm, config: opts.config, prevLocal: this.last ? this.last.control.local : undefined });
+      warm = res.z;
+      this.last = res;
+      return res.control;
+    },
+  };
+}
+
+function simulate(profile, controller, opts = {}) {
+  const veh = opts.vehicle || T.VEHICLE;
+  const target = opts.target !== undefined ? opts.target : C.targetFor(profile.tAmb);
+  let s = soak(profile, veh);
+  const total = profile.minutes * 60;
+  const series = [];
+  const gateLog = [];
+  let u = { q: 0, recirc: 0, local: 0, defrost: 0 };
+  let eHvac = 0;
+  let eDrive = 0;
+  let dist = 0;
+  let discSum = 0;
+  let comfortAt = null;
+  let fogMin = Infinity;
+  let fogSeconds = 0;
+  let co2Max = 0;
+  for (let t = 0; t < total; t += PLANT_DT) {
+    const env = envAt(profile, t);
+    const kmh = env.speed * 3.6;
+    if (t % (controller.interval || 60) === 0) {
+      const want = controller.update(t, s, env, total - t, target, veh, profile);
+      const view = vehicleView(s, kmh, profile);
+      const r = G.decide({ type: 'hvac.recirc', value: want.recirc }, view, 'mpc');
+      const p = G.decide({ type: 'hvac.power', value: want.q }, view, 'mpc');
+      const d = G.decide({ type: 'hvac.defrostShare', value: want.defrost || 0 }, view, 'mpc');
+      u = { q: p.command ? p.command.value : 0, recirc: r.command ? r.command.value : 0, local: want.local, defrost: d.command ? d.command.value : 1 };
+      if (r.verdict !== 'allow' && t % 60 === 0) gateLog.push({ minute: t / 60, verdict: r.verdict, reason: r.reason, asked: want.recirc, applied: u.recirc });
+    }
+    s = T.step(s, u, env, PLANT_DT, veh);
+    const pHvac = T.electricPower(u, env, veh);
+    eHvac += (pHvac * PLANT_DT) / 3.6e6;
+    eDrive += (drivePower(kmh) * PLANT_DT) / 3.6e6;
+    dist += (kmh * PLANT_DT) / 3600;
+    const teq = C.equivalentTemp(s, env, u.local, veh);
+    const d = C.discomfort(teq, target);
+    discSum += d * PLANT_DT;
+    if (d <= COMFORT_TOL && comfortAt === null) comfortAt = (t + PLANT_DT) / 60;
+    const fog = T.fogMargin(s);
+    if (fog < fogMin) fogMin = fog;
+    if (fog < 0) fogSeconds += PLANT_DT;
+    if (s.co2 > co2Max) co2Max = s.co2;
+    if (t % 60 === 0) series.push({ minute: t / 60, ta: s.ta, tm: s.tm, tw: s.tw, tg: s.tg, teq, power: pHvac, q: u.q, recirc: u.recirc, local: u.local, defrost: u.defrost, fog, co2: s.co2, kmh });
+  }
+  const perKm = (eDrive + eHvac) / dist;
+  return {
+    controller: controller.name,
+    target,
+    series,
+    gateLog,
+    hvacKWh: eHvac,
+    driveKWh: eDrive,
+    distanceKm: dist,
+    whPerKm: perKm * 1000,
+    rangeKm: BATTERY_KWH / perKm,
+    meanDiscomfort: discSum / total,
+    comfortAtMin: comfortAt,
+    fogMin,
+    fogMinutes: fogSeconds / 60,
+    co2Max,
+  };
+}
+
+function compare(profileKey, opts = {}) {
+  const profile = typeof profileKey === 'string' ? PROFILES[profileKey] : profileKey;
+  const base = simulate(profile, baselineController(opts.baseline), opts);
+  const baseSeat = simulate(profile, baselineController({ ...opts.baseline, seat: profile.tAmb < 15 ? 2 : 0 }), opts);
+  const ours = simulate(profile, mirionController(opts), opts);
+  const saving = (a) => ({
+    hvacSavedKWh: a.hvacKWh - ours.hvacKWh,
+    hvacSavedPct: (100 * (a.hvacKWh - ours.hvacKWh)) / a.hvacKWh,
+    rangeGainKm: ours.rangeKm - a.rangeKm,
+    rangeGainPct: (100 * (ours.rangeKm - a.rangeKm)) / a.rangeKm,
+  });
+  return { profile, base, baseSeat, ours, vsBase: saving(base), vsBaseSeat: saving(baseSeat) };
+}
+
+module.exports = { PROFILES, BATTERY_KWH, envAt, speedAt, drivePower, soak, baselineController, mirionController, simulate, compare, vehicleView };
+
+};
+__defs["runtime"] = function (module, exports, require) {
+'use strict';
+
+const T = require('./thermal');
+const C = require('./comfort');
+const M = require('./mpc');
+const G = require('./gate');
+const B = require('./blackice');
+
+const RECIRC_ON = 0.5;
+const DEFAULT_TRIP_MINUTES = 30;
+
+function finite(x) {
+  return typeof x === 'number' && Number.isFinite(x);
+}
+
+function createRuntime(options = {}) {
+  const veh = options.vehicle || T.VEHICLE;
+  let state = null;
+  let lastControl = { q: 0, recirc: 0, local: 0, defrost: 0 };
+  let lastSeconds = null;
+  let warm = null;
+  let prevLocal;
+
+  function seed(snap) {
+    const cabin = snap.cabinTemp;
+    const out = snap.outsideTemp;
+    state = T.initialState(cabin, 0.5);
+    state.tw = out + 0.25 * (cabin - out);
+    state.tg = out + 0.3 * (cabin - out);
+    state.ts = out + 0.05 * (cabin - out);
+    state.w = T.humidityRatio(out, 0.7);
+  }
+
+  function update(snap) {
+    const missing = ['cabinTemp', 'outsideTemp'].filter((k) => !finite(snap[k]));
+    if (missing.length) return { ok: false, missing, card: null, ice: null, commands: [] };
+    const occupants = finite(snap.occupants) && snap.occupants >= 1 ? Math.round(snap.occupants) : 1;
+    const speed = finite(snap.speedKmh) ? Math.max(0, snap.speedKmh) : 0;
+    const env = { tAmb: snap.outsideTemp, sun: finite(snap.sun) ? snap.sun : 0, rh: finite(snap.humidity) ? snap.humidity : 0.7, occupants, speed: speed / 3.6 };
+    const seconds = finite(snap.timeSeconds) ? snap.timeSeconds : lastSeconds === null ? 0 : lastSeconds + 60;
+    if (!state) seed(snap);
+    else {
+      let dt = Math.min(600, Math.max(0, seconds - lastSeconds));
+      const observed = { ...lastControl, recirc: typeof snap.recirculation === 'boolean' ? (snap.recirculation ? 0.9 : 0) : lastControl.recirc };
+      while (dt > 0) {
+        const h = Math.min(10, dt);
+        state = T.step(state, observed, env, h, veh);
+        dt -= h;
+      }
+      const error = snap.cabinTemp - state.ta;
+      state.ta += error;
+      state.tm += 0.3 * error;
+    }
+    lastSeconds = seconds;
+
+    const target = C.targetFor(env.tAmb) + (finite(snap.targetOffset) ? snap.targetOffset : 0);
+    const heating = env.tAmb < target - 2;
+    const remainingMinutes = finite(snap.remainingMinutes) && snap.remainingMinutes > 0 ? snap.remainingMinutes : DEFAULT_TRIP_MINUTES;
+    const res = M.plan(state, () => env, Math.ceil(remainingMinutes), { target, vehicle: veh, warm, prevLocal, heating });
+    warm = res.z;
+    prevLocal = res.control.local;
+
+    const view = {
+      speed,
+      gear: typeof snap.gear === 'string' ? snap.gear : speed > 0 ? 'D' : 'P',
+      fogMargin: T.fogMargin(state),
+      co2: state.co2,
+      rain: Boolean(snap.raining),
+      occupied: { driver: true, passenger: occupants > 1, rearLeft: occupants > 2, rearRight: occupants > 3 },
+      child: { driver: false, passenger: false, rearLeft: false, rearRight: false },
+    };
+    const want = res.control;
+    const recirc = G.decide({ type: 'hvac.recirc', value: want.recirc }, view, 'mpc');
+    const power = G.decide({ type: 'hvac.power', value: want.q }, view, 'mpc');
+    const defrost = G.decide({ type: 'hvac.defrostShare', value: want.defrost }, view, 'mpc');
+    lastControl = { q: power.command ? power.command.value : 0, recirc: recirc.command ? recirc.command.value : 0, local: want.local, defrost: defrost.command ? defrost.command.value : 1 };
+
+    const commands = [];
+    const recircOn = lastControl.recirc >= RECIRC_ON;
+    if (typeof snap.recirculation !== 'boolean' || snap.recirculation !== recircOn) commands.push({ type: 'recirculation', on: recircOn });
+    if (finite(snap.seatLevel)) {
+      const seat = G.decide({ type: 'seat.heat', seat: 'driver', level: Math.max(0, want.local) }, view, 'mpc');
+      if (seat.command && seat.command.level !== Math.round(snap.seatLevel)) commands.push({ type: 'seatHeat', level: seat.command.level });
+    }
+
+    const parts = [];
+    if (Math.abs(lastControl.q) < 1) parts.push('공조 대기');
+    else parts.push((heating ? '난방 ' : '냉방 ') + Math.abs(lastControl.q / 1000).toFixed(1) + ' kW');
+    parts.push('내기 순환 ' + (recircOn ? '켜기' : '끄기'));
+    if (heating && lastControl.defrost >= 0.05) parts.push('앞유리 풍량 ' + Math.round(lastControl.defrost * 100) + '%');
+    if (lastControl.local > 0) parts.push('시트 열선 ' + lastControl.local + '단');
+    if (lastControl.local < 0) parts.push('시트 통풍 ' + -lastControl.local + '단');
+    const teq = C.equivalentTemp(state, env, lastControl.local, veh);
+    const reasons = ['체감온도 ' + teq.toFixed(1) + '°C, 목표 ' + target + '°C', '김서림 여유 ' + view.fogMargin.toFixed(1) + 'K, 추정 CO2 ' + Math.round(state.co2) + 'ppm'];
+    if (recirc.verdict !== 'allow' && recirc.reason) reasons.push(recirc.reason);
+    if (finite(snap.batterySoc)) reasons.push('배터리 ' + Math.round(snap.batterySoc) + '%');
+
+    let ice = null;
+    if (finite(snap.hour)) ice = B.assess({ outsideTemp: snap.outsideTemp, hour: snap.hour, raining: Boolean(snap.raining), slipEvents: snap.slipEvents || 0 });
+
+    return {
+      ok: true,
+      missing: [],
+      card: { text: parts.join(' · '), reasons },
+      ice: ice && { level: ice.level, headline: ice.headline, action: ice.action, reasons: ice.reasons, road: ice.road.probability, bridge: ice.bridge.probability },
+      commands,
+      estimate: { teq, fogMargin: view.fogMargin, co2: state.co2, cabin: state.ta },
+      plan: { residual: res.relaxedResidual, iterations: res.iterations },
+    };
+  }
+
+  return { update };
+}
+
+module.exports = { createRuntime, RECIRC_ON };
+
+};
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const S = __req('scenario');
+  const G = __req('gate');
+  const V = __req('verify');
+  const B = __req('blackice');
+  const $ = (id) => document.getElementById(id);
+
+  const CRUISE = { winterCommute: 80, summerSoak: 70, winterFamily: 100 };
+  const state = { key: 'winterCommute', tAmb: -5, sun: 80, occupants: 1, minutes: 35, recirc: 20, seat: false, result: null };
+
+  function profile() {
+    const p = S.PROFILES[state.key];
+    const m = state.minutes;
+    const hot = state.tAmb >= 26 && state.sun >= 400;
+    return {
+      name: p.name, note: p.note, minutes: m, tAmb: state.tAmb, sun: state.sun, rh: p.rh, occupants: state.occupants,
+      soakMinutes: hot ? 90 : 0,
+      speed: m === p.minutes ? p.speed : [[0, 30], [Math.max(1, Math.round(m * 0.25)), CRUISE[state.key]], [Math.max(2, Math.round(m * 0.9)), 25]],
+    };
+  }
+
+  const presetBox = $('presets');
+  Object.entries(S.PROFILES).forEach(([key, p]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = p.name;
+    b.title = p.note;
+    b.dataset.key = key;
+    b.addEventListener('click', () => {
+      Object.assign(state, { key, tAmb: p.tAmb, sun: p.sun, occupants: p.occupants, minutes: p.minutes });
+      syncInputs();
+      run();
+    });
+    presetBox.appendChild(b);
+  });
+
+  const inputs = [
+    ['in-tamb', 'out-tamb', 'tAmb', (v) => v + '°C'],
+    ['in-sun', 'out-sun', 'sun', (v) => v + ' W/m²'],
+    ['in-occ', 'out-occ', 'occupants', (v) => v + '명'],
+    ['in-min', 'out-min', 'minutes', (v) => v + '분'],
+    ['in-rec', 'out-rec', 'recirc', (v) => v + '%'],
+  ];
+  function syncInputs() {
+    for (const [id, out, key, fmt] of inputs) {
+      $(id).value = state[key];
+      $(out).textContent = fmt(state[key]);
+    }
+    presetBox.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.key === state.key)));
+  }
+  let timer = null;
+  for (const [id, out, key, fmt] of inputs)
+    $(id).addEventListener('input', (e) => {
+      state[key] = Number(e.target.value);
+      $(out).textContent = fmt(state[key]);
+      clearTimeout(timer);
+      timer = setTimeout(run, 180);
+    });
+  $('in-seat').addEventListener('change', (e) => {
+    state.seat = e.target.checked;
+    render();
+  });
+
+  function run() {
+    state.result = S.compare(profile(), { baseline: { recirc: state.recirc / 100 } });
+    const scrub = $('in-scrub');
+    scrub.max = state.result.ours.series.length - 1;
+    if (Number(scrub.value) > Number(scrub.max)) scrub.value = 0;
+    render();
+  }
+
+  const f1 = (x) => x.toFixed(1);
+  const signed = (x, d = 0) => (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(d);
+  const pill = (cls, text) => '<span class="pill ' + cls + '">' + text + '</span>';
+  function tile(k, v, s, extra) {
+    return '<div class="tile"><span class="k">' + k + '</span><span class="v">' + v + '</span><span class="s">' + s + (extra ? ' ' + extra : '') + '</span></div>';
+  }
+
+  function render() {
+    const r = state.result;
+    const base = state.seat ? r.baseSeat : r.base;
+    const diff = state.seat ? r.vsBaseSeat : r.vsBase;
+    const ours = r.ours;
+    const settle = (x) => Math.min.apply(null, x.series.slice(Math.min(10, x.series.length - 1)).map((p) => p.fog));
+    const fog = settle(ours);
+    const at = (x) => (x.comfortAtMin === null ? '도달 못 함' : Math.round(x.comfortAtMin) + '분');
+    $('tiles').innerHTML =
+      tile('공조 전력량', ours.hvacKWh.toFixed(2) + ' kWh', '기준 ' + base.hvacKWh.toFixed(2) + ' kWh 대비 ' + signed(-diff.hvacSavedPct) + '%') +
+      tile('환산 주행거리', signed(diff.rangeGainKm) + ' km', Math.round(base.rangeKm) + ' → ' + Math.round(ours.rangeKm) + ' km') +
+      tile('쾌적 도달', at(ours), '기준 ' + at(base)) +
+      tile('김서림 여유 최저', f1(fog) + ' K', '기준 ' + f1(settle(base)) + ' K', fog >= 1.5 ? pill('good', '안전') : fog >= 0 ? pill('warn', '한계 근접') : pill('crit', '김서림')) +
+      tile('실내 CO2 최고', Math.round(ours.co2Max).toLocaleString() + ' ppm', '기준 ' + Math.round(base.co2Max).toLocaleString() + ' ppm', ours.co2Max <= 1500 ? pill('good', '한계 안') : pill('warn', '환기 필요'));
+    renderAdvice();
+    const x = ours.series.map((p) => p.minute);
+    const pair = (key, scale) => [
+      { name: '미리온', color: 'var(--ours)', values: ours.series.map((p) => p[key] * (scale || 1)) },
+      { name: '기준', color: 'var(--base)', values: base.series.map((p) => p[key] * (scale || 1)) },
+    ];
+    chart($('c-teq'), { title: '체감온도 (°C)', x, xUnit: '분', series: pair('teq'), band: [ours.target - 0.5, ours.target + 0.5], digits: 1, unit: '°C' });
+    chart($('c-pow'), { title: '공조 전력 (kW)', x, xUnit: '분', series: pair('power', 0.001), digits: 2, unit: 'kW', zero: true });
+    chart($('c-fog'), { title: '앞유리 김서림 여유 (K), 점선은 게이트 한계 1.5K', x, xUnit: '분', series: pair('fog'), limit: 1.5, digits: 1, unit: 'K' });
+    chart($('c-co2'), { title: '실내 CO2 (ppm), 점선은 게이트 한계 1,500ppm', x, xUnit: '분', series: pair('co2'), limit: 1500, digits: 0, unit: 'ppm' });
+  }
+
+  function renderAdvice() {
+    const r = state.result;
+    const m = Number($('in-scrub').value);
+    const p = r.ours.series[m];
+    const heating = state.tAmb < r.ours.target - 2;
+    const parts = [];
+    if (Math.abs(p.q) < 1) parts.push('공조 대기');
+    else parts.push((heating ? '난방 ' : '냉방 ') + Math.abs(p.q / 1000).toFixed(1) + ' kW');
+    parts.push('내기 순환 ' + Math.round(p.recirc * 100) + '%');
+    if (heating && p.defrost >= 0.05) parts.push('앞유리 풍량 ' + Math.round(p.defrost * 100) + '%');
+    if (p.local > 0) parts.push('시트 열선 ' + p.local + '단');
+    if (p.local < 0) parts.push('시트 통풍 ' + -p.local + '단');
+    $('now-text').textContent = parts.join(' · ');
+    const why = [];
+    why.push('도착까지 ' + (r.profile.minutes - m) + '분, 체감온도 ' + f1(p.teq) + '°C (목표 ' + r.ours.target + '°C)');
+    if (!heating && m < 3 && p.recirc < 0.3) why.push('실내가 바깥보다 뜨거워 먼저 외기로 열기를 뺍니다.');
+    else if (heating && p.defrost >= 0.05) why.push('바람 일부를 앞유리로 보내 유리를 데우고, 그만큼 내기 순환을 더 씁니다. 김서림 여유 ' + f1(p.fog) + 'K.');
+    else if (p.recirc >= 0.6) why.push('탑승 ' + state.occupants + '명, 김서림 여유 ' + f1(p.fog) + 'K 로 넉넉해 외기를 적게 들이고 부하를 줄입니다.');
+    else if (heating) why.push('김서림 여유 ' + f1(p.fog) + 'K, CO2 ' + Math.round(p.co2) + 'ppm 을 지키려고 외기를 ' + Math.round((1 - p.recirc) * 100) + '% 들입니다.');
+    if (p.local > 0) why.push('열선이 체감을 올려 주는 만큼 히터 출력을 낮춥니다.');
+    if (p.local < 0) why.push('통풍 시트가 체감을 내려 주는 만큼 냉방 출력을 낮춥니다.');
+    $('now-why').innerHTML = why.map((t) => '<li>' + t + '</li>').join('');
+    $('out-scrub').textContent = m + '분';
+    $('now-min').textContent = '출발 ' + m + '분 뒤';
+  }
+  $('in-scrub').addEventListener('input', renderAdvice);
+
+  function niceTicks(lo, hi, n) {
+    const span = hi - lo || 1;
+    const raw = span / n;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((s) => s >= raw);
+    const out = [];
+    for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9; v += step) out.push(Number(v.toFixed(6)));
+    return out;
+  }
+  function chart(el, o) {
+    const W = 520, H = 230, L = 44, R = 14, Tp = 10, B0 = 26;
+    let lo = Infinity, hi = -Infinity;
+    for (const s of o.series) for (const v of s.values) { if (v < lo) lo = v; if (v > hi) hi = v; }
+    if (o.band) { lo = Math.min(lo, o.band[0]); hi = Math.max(hi, o.band[1]); }
+    if (o.limit !== undefined) { lo = Math.min(lo, o.limit); hi = Math.max(hi, o.limit); }
+    if (o.zero) lo = Math.min(lo, 0);
+    if (o.range) { lo = o.range[0]; hi = o.range[1]; }
+    else { const pad = (hi - lo) * 0.08 || 1; lo -= o.zero && lo === 0 ? 0 : pad; hi += pad; }
+    const xMin = o.x[0];
+    const xMax = o.x[o.x.length - 1];
+    const X = (m) => L + ((W - L - R) * (m - xMin)) / (xMax - xMin || 1);
+    const Y = (v) => Tp + (H - Tp - B0) * (1 - (v - lo) / (hi - lo));
+    let g = '';
+    for (const t of niceTicks(lo, hi, 4)) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(t) + '" y2="' + Y(t) + '" stroke="var(--line)" stroke-width="1"/><text x="' + (L - 6) + '" y="' + (Y(t) + 4) + '" text-anchor="end" font-size="11" fill="var(--ink-2)">' + t.toLocaleString() + '</text>';
+    for (const t of niceTicks(xMin, xMax, 5)) g += '<text x="' + X(t) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="var(--ink-2)">' + t + o.xUnit + '</text>';
+    if (o.band) g += '<rect x="' + L + '" width="' + (W - L - R) + '" y="' + Y(o.band[1]) + '" height="' + (Y(o.band[0]) - Y(o.band[1])) + '" fill="var(--band)"/>';
+    if (o.limit !== undefined) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(o.limit) + '" y2="' + Y(o.limit) + '" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="5 4"/>';
+    for (const s of o.series.slice().reverse()) {
+      const d = s.values.map((v, i) => (i ? 'L' : 'M') + X(o.x[i]).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+      g += '<path d="' + d + '" fill="none" stroke="' + s.color + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+      const last = s.values.length - 1;
+      g += '<circle cx="' + X(o.x[last]) + '" cy="' + Y(s.values[last]) + '" r="4" fill="' + s.color + '" stroke="var(--panel)" stroke-width="2"/>';
+    }
+    if (o.startLabels) {
+      const tags = o.series.map((s) => ({ name: s.name, y: Y(s.values[0]) - 7 })).sort((p, q) => p.y - q.y);
+      for (let i = 1; i < tags.length; i++) if (tags[i].y - tags[i - 1].y < 15) tags[i].y = tags[i - 1].y + 24;
+      for (const t of tags) g += '<text x="' + (L + 6) + '" y="' + Math.max(Tp + 10, t.y) + '" font-size="11" fill="var(--ink)">' + t.name + '</text>';
+    }
+    g += '<line class="cross" y1="' + Tp + '" y2="' + (H - B0) + '" stroke="var(--ink-2)" stroke-width="1" visibility="hidden"/>';
+    el.innerHTML = '<h3>' + o.title + '</h3><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + o.title + '">' + g + '</svg><div class="tip"></div>';
+    const svg = el.querySelector('svg');
+    const cross = el.querySelector('.cross');
+    const tip = el.querySelector('.tip');
+    function move(e) {
+      const box = svg.getBoundingClientRect();
+      const px = ((e.clientX - box.left) / box.width) * W;
+      const want = xMin + ((px - L) / (W - L - R)) * (xMax - xMin);
+      let i = 0;
+      for (let k = 1; k < o.x.length; k++) if (Math.abs(o.x[k] - want) < Math.abs(o.x[i] - want)) i = k;
+      cross.setAttribute('x1', X(o.x[i])); cross.setAttribute('x2', X(o.x[i])); cross.setAttribute('visibility', 'visible');
+      tip.innerHTML = '<b>' + o.x[i] + o.xUnit + '</b><br>' + o.series.map((s) => '<span style="color:' + s.color + '">●</span> ' + s.name + ' ' + s.values[i].toLocaleString(undefined, { minimumFractionDigits: o.digits, maximumFractionDigits: o.digits }) + ' ' + o.unit).join('<br>');
+      tip.style.display = 'block';
+      const left = (X(o.x[i]) / W) * box.width;
+      tip.style.left = Math.min(box.width - tip.offsetWidth - 4, Math.max(4, left + 10)) + 'px';
+      tip.style.top = '28px';
+    }
+    svg.addEventListener('pointermove', move);
+    svg.addEventListener('pointerdown', move);
+    svg.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); tip.style.display = 'none'; });
+  }
+
+  const ice = { sky: 'unknown', humidity: null };
+  function segment(boxId, options, key) {
+    const box = $(boxId);
+    options.forEach(([value, label]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.addEventListener('click', () => {
+        ice[key] = value;
+        box.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        scheduleIce();
+      });
+      b.setAttribute('aria-pressed', String(ice[key] === value));
+      box.appendChild(b);
+    });
+  }
+  segment('i-sky', [['unknown', '모름'], ['clear', '맑음'], ['overcast', '흐림']], 'sky');
+  segment('i-hum', [[null, '모름'], [0.3, '건조'], [0.6, '보통'], [0.9, '습함']], 'humidity');
+  const ICE_PILL = { danger: 'crit', warning: 'warn', caution: 'warn', low: 'mute' };
+  function iceObs() {
+    return {
+      outsideTemp: Number($('i-temp').value), hour: Number($('i-hour').value), sky: ice.sky, humidity: ice.humidity,
+      raining: $('i-rain').checked, recentRain: $('i-recent').checked, slipEvents: $('i-slip').checked ? 1 : 0,
+    };
+  }
+  function renderIce() {
+    const obs = iceObs();
+    const h = Math.floor(obs.hour);
+    $('io-temp').textContent = obs.outsideTemp.toFixed(1) + '°C';
+    $('io-hour').textContent = (h < 10 ? '0' : '') + h + ':' + (obs.hour % 1 ? '30' : '00');
+    const r = B.assess(obs);
+    $('ice-head').textContent = r.headline;
+    $('ice-action').innerHTML = pill(ICE_PILL[r.level], r.levelText) + ' ' + r.action;
+    for (const key of ['bridge', 'road']) {
+      const p = Math.round(r[key].probability * 100);
+      $('ice-bar-' + key).style.width = p + '%';
+      $('ice-p-' + key).textContent = p + '%';
+    }
+    $('ice-why').innerHTML = r.reasons.map((t) => '<li>' + t + '</li>').join('');
+    const temps = [-8, -6, -4, -2, -1, 0, 1, 2, 3, 4, 6, 8];
+    const sweep = B.sweepTemperature(obs, temps, { particles: 300 });
+    chart($('c-ice'), {
+      title: '같은 조건에서 외기 온도에 따른 결빙 확률 (%)', x: temps, xUnit: '°C', range: [0, 100], digits: 0, unit: '%', startLabels: true,
+      series: [
+        { name: '교량·고가', color: 'var(--bridge)', values: sweep.map((s) => Math.round(s.bridge * 100)) },
+        { name: '일반 도로', color: 'var(--road)', values: sweep.map((s) => Math.round(s.road * 100)) },
+      ],
+    });
+  }
+  let iceTimer = null;
+  function scheduleIce() {
+    clearTimeout(iceTimer);
+    iceTimer = setTimeout(renderIce, 150);
+  }
+  ['i-temp', 'i-hour', 'i-rain', 'i-recent', 'i-slip'].forEach((id) => $(id).addEventListener('input', scheduleIce));
+
+  function vehicle() {
+    const speed = Number($('g-speed').value);
+    const pass = $('g-pass').checked;
+    const child = $('g-child').checked;
+    return {
+      speed, gear: speed > 0 ? 'D' : 'P', fogMargin: Number($('g-fog').value), co2: Number($('g-co2').value), rain: $('g-rain').checked,
+      occupied: { driver: true, passenger: pass, rearLeft: child, rearRight: false },
+      child: { driver: false, passenger: false, rearLeft: child, rearRight: false },
+    };
+  }
+  function syncGate() {
+    const v = vehicle();
+    $('go-speed').textContent = v.speed + ' km/h';
+    $('go-fog').textContent = v.fogMargin.toFixed(1) + ' K';
+    $('go-co2').textContent = v.co2.toLocaleString() + ' ppm';
+    $('g-state').textContent = '기어 ' + v.gear + (v.speed > 0 ? ', 주행 중' : ', 정차') + ' · 탑승: 운전석' + (v.occupied.passenger ? ', 조수석' : '') + (v.occupied.rearLeft ? ', 뒷자리(어린이)' : '');
+  }
+  ['g-speed', 'g-fog', 'g-co2', 'g-rain', 'g-child', 'g-pass'].forEach((id) => $(id).addEventListener('input', syncGate));
+
+  const SEAT = { driver: '운전석', passenger: '조수석', rearLeft: '뒷자리 왼쪽', rearRight: '뒷자리 오른쪽' };
+  function describe(c) {
+    switch (c.type) {
+      case 'hvac.setTemp': return '설정 온도 ' + c.value + '°C';
+      case 'hvac.power': return '공조 출력 ' + c.value + ' W';
+      case 'hvac.recirc': return '내기 순환 ' + Math.round(c.value * 100) + '%';
+      case 'hvac.defrost': return '성에 제거 ' + (c.on ? '켜기' : '끄기');
+      case 'hvac.defrostShare': return '앞유리 풍량 ' + Math.round(c.value * 100) + '%';
+      case 'seat.heat': return SEAT[c.seat] + (c.level > 0 ? ' 열선 ' + c.level + '단' : c.level < 0 ? ' 통풍 ' + -c.level + '단' : ' 열선·통풍 끄기');
+      case 'seat.position': return SEAT[c.seat] + ' 위치 ' + (c.delta > 0 ? '뒤로' : '앞으로') + ' ' + Math.abs(c.delta) + 'mm';
+      case 'window.open': return SEAT[c.seat] + ' 창문 ' + c.percent + '% 열기';
+      case 'door.open': return '문 열기';
+      case 'door.unlock': return '문 잠금 해제';
+      case 'wiper.set': return '와이퍼 ' + c.mode;
+      default: return c.type;
+    }
+  }
+  const VERDICT = { allow: ['good', '통과'], clamp: ['warn', '보정'], deny: ['crit', '거부'] };
+  const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+  const esc = (t) => t.replace(/[&<>]/g, (ch) => ESC[ch]);
+
+  function send(label, commands) {
+    const v = vehicle();
+    let rows = '';
+    for (const cmd of commands) {
+      const res = G.decide(cmd, v, 'ai');
+      const tag = VERDICT[res.verdict];
+      rows += '<div class="line"><span>요청: ' + describe(cmd) + '</span>' + pill(tag[0], tag[1]) + (res.verdict === 'clamp' ? '<span>→ 실행: ' + describe(res.command) + '</span>' : '') + (res.reason ? '<span class="because">' + res.reason + '</span>' : '') + '</div>';
+    }
+    const entry = document.createElement('div');
+    entry.className = 'entry';
+    entry.innerHTML = '<span class="said">' + esc(label) + '</span>' + rows;
+    const log = $('g-log');
+    log.insertBefore(entry, log.firstChild);
+    while (log.children.length > 4) log.removeChild(log.lastChild);
+  }
+  const ALL = ['driver', 'passenger', 'rearLeft', 'rearRight'];
+  [
+    ['앞유리 김서림 제거', [{ type: 'hvac.defrost', on: true }, { type: 'hvac.recirc', value: 0 }]],
+    ['내기 순환 켜기', [{ type: 'hvac.recirc', value: 0.9 }]],
+    ['창문 전부 열기', ALL.map((seat) => ({ type: 'window.open', seat, percent: 100 }))],
+    ['문 열기', [{ type: 'door.open' }]],
+    ['설정 온도 99도', [{ type: 'hvac.setTemp', value: 99 }]],
+    ['뒷자리 열선 3단', [{ type: 'seat.heat', seat: 'rearLeft', level: 3 }]],
+    ['운전석 뒤로 밀기', [{ type: 'seat.position', seat: 'driver', delta: 10 }]],
+  ].forEach(([label, commands]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.addEventListener('click', () => send(label, commands));
+    $('g-chips').appendChild(b);
+  });
+
+  $('v-inv').innerHTML = V.INVARIANTS.map((inv) => '<li>' + inv.text + '</li>').join('');
+  $('v-run').addEventListener('click', () => {
+    $('v-out').textContent = '검사 중…';
+    setTimeout(() => {
+      const t0 = performance.now();
+      const r = V.run('quick');
+      $('v-out').innerHTML = r.checked.toLocaleString() + '건 조합 검사, 불변식 ' + r.invariants + '개, 위반 ' + r.violations + '건 (' + ((performance.now() - t0) / 1000).toFixed(1) + '초) ' + (r.violations === 0 ? pill('good', '위반 없음') : pill('crit', '위반 발견')) + ' · 이 화면은 축약 격자이고, 전체 격자 99,993,600건은 저장소의 테스트가 돌립니다.';
+    }, 30);
+  });
+
+  syncInputs();
+  syncGate();
+  run();
+  renderIce();
+  send('문 열기', [{ type: 'door.open' }]);
+  send('내기 순환 켜기', [{ type: 'hvac.recirc', value: 0.9 }]);
+})();
+</script>
+</body>
+</html>

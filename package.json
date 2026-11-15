@@ -1,0 +1,13 @@
+{
+  "name": "mirion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "미리온: EV 실내 열 디지털 트윈, 예측 공조 제어, 안전 게이트, 노면 결빙 추정 프로토타입",
+  "license": "UNLICENSED",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "results": "node tools/results.js",
+    "build": "node tools/build-demo.js"
+  },
+  "engines": { "node": ">=20" }
+}

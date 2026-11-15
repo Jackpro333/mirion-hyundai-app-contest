@@ -1,0 +1,519 @@
+{
+  "generatedBy": "tools/results.js",
+  "batteryKWh": 77,
+  "scenarios": {
+    "winterCommute": {
+      "name": "겨울 출근",
+      "note": "영하 5도, 밤새 실외 주차, 혼자 35분",
+      "rows": [
+        {
+          "baselineRecirc": 0.2,
+          "base": {
+            "hvacKWh": 1.442,
+            "meanDiscomfortK": 3.82,
+            "comfortAtMin": 22.8,
+            "fogSettledMinK": 12.9,
+            "fogMinutes": 0,
+            "co2MaxPpm": 496,
+            "rangeKm": 474,
+            "gateEvents": 0
+          },
+          "baseSeat": {
+            "hvacKWh": 1.394,
+            "meanDiscomfortK": 2.9,
+            "comfortAtMin": 19,
+            "fogSettledMinK": 12.3,
+            "fogMinutes": 0,
+            "co2MaxPpm": 504,
+            "rangeKm": 478.2,
+            "gateEvents": 0
+          },
+          "ours": {
+            "hvacKWh": 0.788,
+            "meanDiscomfortK": 1.16,
+            "comfortAtMin": 11,
+            "fogSettledMinK": 2.7,
+            "fogMinutes": 0,
+            "co2MaxPpm": 974,
+            "rangeKm": 538.2,
+            "gateEvents": 0
+          },
+          "vsBase": {
+            "hvacSavedKWh": 0.65,
+            "hvacSavedPct": 45.31,
+            "rangeGainKm": 64.12,
+            "rangeGainPct": 13.53
+          },
+          "vsBaseSeat": {
+            "hvacSavedKWh": 0.61,
+            "hvacSavedPct": 43.44,
+            "rangeGainKm": 59.96,
+            "rangeGainPct": 12.54
+          },
+          "distanceKm": 33.7
+        },
+        {
+          "baselineRecirc": 0.5,
+          "base": {
+            "hvacKWh": 1.223,
+            "meanDiscomfortK": 2.59,
+            "comfortAtMin": 16.2,
+            "fogSettledMinK": 10.9,
+            "fogMinutes": 0,
+            "co2MaxPpm": 569,
+            "rangeKm": 493.8,
+            "gateEvents": 0
+          },
+          "baseSeat": {
+            "hvacKWh": 1.153,
+            "meanDiscomfortK": 2.06,
+            "comfortAtMin": 14.5,
+            "fogSettledMinK": 9.9,
+            "fogMinutes": 0,
+            "co2MaxPpm": 579,
+            "rangeKm": 500.3,
+            "gateEvents": 0
+          },
+          "ours": {
+            "hvacKWh": 0.788,
+            "meanDiscomfortK": 1.16,
+            "comfortAtMin": 11,
+            "fogSettledMinK": 2.7,
+            "fogMinutes": 0,
+            "co2MaxPpm": 974,
+            "rangeKm": 538.2,
+            "gateEvents": 0
+          },
+          "vsBase": {
+            "hvacSavedKWh": 0.43,
+            "hvacSavedPct": 35.52,
+            "rangeGainKm": 44.4,
+            "rangeGainPct": 8.99
+          },
+          "vsBaseSeat": {
+            "hvacSavedKWh": 0.37,
+            "hvacSavedPct": 31.65,
+            "rangeGainKm": 37.82,
+            "rangeGainPct": 7.56
+          },
+          "distanceKm": 33.7
+        },
+        {
+          "baselineRecirc": 0.7,
+          "base": {
+            "hvacKWh": 1.053,
+            "meanDiscomfortK": 2.08,
+            "comfortAtMin": 13.7,
+            "fogSettledMinK": 8.8,
+            "fogMinutes": 0,
+            "co2MaxPpm": 673,
+            "rangeKm": 510.2,
+            "gateEvents": 0
+          },
+          "baseSeat": {
+            "hvacKWh": 0.995,
+            "meanDiscomfortK": 1.65,
+            "comfortAtMin": 12,
+            "fogSettledMinK": 7.9,
+            "fogMinutes": 0,
+            "co2MaxPpm": 684,
+            "rangeKm": 516.1,
+            "gateEvents": 0
+          },
+          "ours": {
+            "hvacKWh": 0.788,
+            "meanDiscomfortK": 1.16,
+            "comfortAtMin": 11,
+            "fogSettledMinK": 2.7,
+            "fogMinutes": 0,
+            "co2MaxPpm": 974,
+            "rangeKm": 538.2,
+            "gateEvents": 0
+          },
+          "vsBase": {
+            "hvacSavedKWh": 0.26,
+            "hvacSavedPct": 25.12,
+            "rangeGainKm": 27.95,
+            "rangeGainPct": 5.48
+          },
+          "vsBaseSeat": {
+            "hvacSavedKWh": 0.21,
+            "hvacSavedPct": 20.79,
+            "rangeGainKm": 22.11,
+            "rangeGainPct": 4.28
+          },
+          "distanceKm": 33.7
+        }
+      ]
+    },
+    "summerSoak": {
+      "name": "여름 땡볕 주차 후",
+      "note": "33도, 땡볕 90분 주차 뒤 2명이 30분",
+      "rows": [
+        {
+          "baselineRecirc": 0.6,
+          "base": {
+            "hvacKWh": 0.756,
+            "meanDiscomfortK": 2.66,
+            "comfortAtMin": 12.7,
+            "fogSettledMinK": 17.1,
+            "fogMinutes": 0,
+            "co2MaxPpm": 823,
+            "rangeKm": 563,
+            "gateEvents": 0
+          },
+          "baseSeat": {
+            "hvacKWh": 0.756,
+            "meanDiscomfortK": 2.66,
+            "comfortAtMin": 12.7,
+            "fogSettledMinK": 17.1,
+            "fogMinutes": 0,
+            "co2MaxPpm": 823,
+            "rangeKm": 563,
+            "gateEvents": 0
+          },
+          "ours": {
+            "hvacKWh": 0.662,
+            "meanDiscomfortK": 1.97,
+            "comfortAtMin": 14,
+            "fogSettledMinK": 19.6,
+            "fogMinutes": 0,
+            "co2MaxPpm": 1101,
+            "rangeKm": 577.9,
+            "gateEvents": 0
+          },
+          "vsBase": {
+            "hvacSavedKWh": 0.09,
+            "hvacSavedPct": 12.46,
+            "rangeGainKm": 14.92,
+            "rangeGainPct": 2.65
+          },
+          "vsBaseSeat": {
+            "hvacSavedKWh": 0.09,
+            "hvacSavedPct": 12.46,
+            "rangeGainKm": 14.92,
+            "rangeGainPct": 2.65
+          },
+          "distanceKm": 26.7
+        }
+      ]
+    },
+    "winterFamily": {
+      "name": "겨울 가족 장거리",
+      "note": "영하 8도 야간, 4명이 고속도로 90분",
+      "rows": [
+        {
+          "baselineRecirc": 0.2,
+          "base": {
+            "hvacKWh": 4.016,
+            "meanDiscomfortK": 2.28,
+            "comfortAtMin": 30.7,
+            "fogSettledMinK": 6.7,
+            "fogMinutes": 0,
+            "co2MaxPpm": 710,
+            "rangeKm": 412.8,
+            "gateEvents": 0
+          },
+          "baseSeat": {
+            "hvacKWh": 3.85,
+            "meanDiscomfortK": 1.67,
+            "comfortAtMin": 23.8,
+            "fogSettledMinK": 5.9,
+            "fogMinutes": 0,
+            "co2MaxPpm": 754,
+            "rangeKm": 415.5,
+            "gateEvents": 0
+          },
+          "ours": {
+            "hvacKWh": 2.578,
+            "meanDiscomfortK": 0.81,
+            "comfortAtMin": 10,
+            "fogSettledMinK": 2,
+            "fogMinutes": 0,
+            "co2MaxPpm": 1156,
+            "rangeKm": 437.6,
+            "gateEvents": 0
+          },
+          "vsBase": {
+            "hvacSavedKWh": 1.44,
+            "hvacSavedPct": 35.81,
+            "rangeGainKm": 24.81,
+            "rangeGainPct": 6.01
+          },
+          "vsBaseSeat": {
+            "hvacSavedKWh": 1.27,
+            "hvacSavedPct": 33.04,
+            "rangeGainKm": 22.09,
+            "rangeGainPct": 5.32
+          },
+          "distanceKm": 136
+        },
+        {
+          "baselineRecirc": 0.5,
+          "base": {
+            "hvacKWh": 3.064,
+            "meanDiscomfortK": 1.51,
+            "comfortAtMin": 20.5,
+            "fogSettledMinK": 3,
+            "fogMinutes": 0,
+            "co2MaxPpm": 994,
+            "rangeKm": 428.9,
+            "gateEvents": 0
+          },
+          "baseSeat": {
+            "hvacKWh": 2.883,
+            "meanDiscomfortK": 1.15,
+            "comfortAtMin": 17.3,
+            "fogSettledMinK": 1.5,
+            "fogMinutes": 0,
+            "co2MaxPpm": 1061,
+            "rangeKm": 432.1,
+            "gateEvents": 1
+          },
+          "ours": {
+            "hvacKWh": 2.578,
+            "meanDiscomfortK": 0.81,
+            "comfortAtMin": 10,
+            "fogSettledMinK": 2,
+            "fogMinutes": 0,
+            "co2MaxPpm": 1156,
+            "rangeKm": 437.6,
+            "gateEvents": 0
+          },
+          "vsBase": {
+            "hvacSavedKWh": 0.49,
+            "hvacSavedPct": 15.86,
+            "rangeGainKm": 8.71,
+            "rangeGainPct": 2.03
+          },
+          "vsBaseSeat": {
+            "hvacSavedKWh": 0.3,
+            "hvacSavedPct": 10.56,
+            "rangeGainKm": 5.5,
+            "rangeGainPct": 1.27
+          },
+          "distanceKm": 136
+        },
+        {
+          "baselineRecirc": 0.7,
+          "base": {
+            "hvacKWh": 2.674,
+            "meanDiscomfortK": 1.18,
+            "comfortAtMin": 16.5,
+            "fogSettledMinK": 1.3,
+            "fogMinutes": 0,
+            "co2MaxPpm": 1292,
+            "rangeKm": 435.9,
+            "gateEvents": 11
+          },
+          "baseSeat": {
+            "hvacKWh": 2.657,
+            "meanDiscomfortK": 0.92,
+            "comfortAtMin": 14,
+            "fogSettledMinK": 1.3,
+            "fogMinutes": 0,
+            "co2MaxPpm": 1248,
+            "rangeKm": 436.2,
+            "gateEvents": 18
+          },
+          "ours": {
+            "hvacKWh": 2.578,
+            "meanDiscomfortK": 0.81,
+            "comfortAtMin": 10,
+            "fogSettledMinK": 2,
+            "fogMinutes": 0,
+            "co2MaxPpm": 1156,
+            "rangeKm": 437.6,
+            "gateEvents": 0
+          },
+          "vsBase": {
+            "hvacSavedKWh": 0.1,
+            "hvacSavedPct": 3.59,
+            "rangeGainKm": 1.75,
+            "rangeGainPct": 0.4
+          },
+          "vsBaseSeat": {
+            "hvacSavedKWh": 0.08,
+            "hvacSavedPct": 2.96,
+            "rangeGainKm": 1.43,
+            "rangeGainPct": 0.33
+          },
+          "distanceKm": 136
+        }
+      ]
+    }
+  },
+  "uncertainty": {
+    "winterCommute": {
+      "samples": 60,
+      "savedPct": {
+        "p10": 26.6,
+        "p50": 35.6,
+        "p90": 41.9
+      },
+      "rangeGainKm": {
+        "p10": 30.2,
+        "p50": 44.3,
+        "p90": 57
+      },
+      "shareSaving": 1,
+      "fogSettledMinK": {
+        "worst": 1.9,
+        "p10": 2.1
+      },
+      "co2MaxPpm": {
+        "worst": 990
+      },
+      "shareComfortNotWorse": 1
+    },
+    "summerSoak": {
+      "samples": 60,
+      "savedPct": {
+        "p10": 11.4,
+        "p50": 12.6,
+        "p90": 13.5
+      },
+      "rangeGainKm": {
+        "p10": 13.1,
+        "p50": 14.9,
+        "p90": 16.3
+      },
+      "shareSaving": 1,
+      "fogSettledMinK": {
+        "worst": 19,
+        "p10": 19.2
+      },
+      "co2MaxPpm": {
+        "worst": 1101
+      },
+      "shareComfortNotWorse": 1
+    },
+    "winterFamily": {
+      "samples": 60,
+      "savedPct": {
+        "p10": 4.6,
+        "p50": 16.9,
+        "p90": 30.7
+      },
+      "rangeGainKm": {
+        "p10": 2.3,
+        "p50": 9.4,
+        "p90": 20.2
+      },
+      "shareSaving": 1,
+      "fogSettledMinK": {
+        "worst": 1.7,
+        "p10": 1.8
+      },
+      "co2MaxPpm": {
+        "worst": 1165
+      },
+      "shareComfortNotWorse": 0.95
+    }
+  },
+  "optimizer": {
+    "cases": 4,
+    "meanPlanMs": 6.7,
+    "meanIterations": 468,
+    "worstResidual": 9.9e-06,
+    "worstRelativeGapToSecondSolver": 4.9e-09
+  },
+  "gate": {
+    "checked": 99993600,
+    "states": 107520,
+    "commands": 310,
+    "invariants": 11,
+    "counts": {
+      "allow": 10495872,
+      "clamp": 9824256,
+      "deny": 79673472
+    },
+    "violations": 0,
+    "seconds": 8.8
+  },
+  "blackice": {
+    "clearDawnHumid": {
+      "obs": {
+        "outsideTemp": 1.5,
+        "hour": 5.5,
+        "sky": "clear",
+        "humidity": 0.9,
+        "wind": 1
+      },
+      "road": 0.57,
+      "bridge": 0.97,
+      "level": "danger",
+      "headline": "교량·고가 결빙 가능성 98% · 위험",
+      "bridgeByCloud": {
+        "clear": 0.97,
+        "partly": null,
+        "overcast": null
+      }
+    },
+    "unknownDawn": {
+      "obs": {
+        "outsideTemp": 1.5,
+        "hour": 5.5
+      },
+      "road": 0.22,
+      "bridge": 0.46,
+      "level": "warning",
+      "headline": "교량·고가 결빙 가능성 46% · 경고",
+      "bridgeByCloud": {
+        "clear": 0.67,
+        "partly": 0.46,
+        "overcast": 0.26
+      }
+    },
+    "overcastDawnHumid": {
+      "obs": {
+        "outsideTemp": 1.5,
+        "hour": 5.5,
+        "sky": "overcast",
+        "humidity": 0.9,
+        "wind": 1
+      },
+      "road": 0.04,
+      "bridge": 0.34,
+      "level": "warning",
+      "headline": "교량·고가 결빙 가능성 34% · 경고",
+      "bridgeByCloud": {
+        "clear": null,
+        "partly": null,
+        "overcast": 0.34
+      }
+    },
+    "clearAfternoon": {
+      "obs": {
+        "outsideTemp": 3,
+        "hour": 14,
+        "sky": "clear"
+      },
+      "road": 0,
+      "bridge": 0,
+      "level": "low",
+      "headline": "결빙 신호가 약합니다(0%). 안전하다는 뜻은 아닙니다.",
+      "bridgeByCloud": {
+        "clear": 0,
+        "partly": null,
+        "overcast": null
+      }
+    },
+    "rainBelowZero": {
+      "obs": {
+        "outsideTemp": -2,
+        "hour": 23,
+        "raining": true
+      },
+      "road": 0.88,
+      "bridge": 0.99,
+      "level": "danger",
+      "headline": "교량·고가 결빙 가능성 99% · 위험",
+      "bridgeByCloud": {
+        "clear": 1,
+        "partly": 0.99,
+        "overcast": 0.97
+      }
+    }
+  }
+}

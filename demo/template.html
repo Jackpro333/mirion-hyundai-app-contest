@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>미리온 공조 시뮬레이터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f1f4f6;
+  --panel: #ffffff;
+  --ink: #10202b;
+  --ink-2: #4c5c68;
+  --line: #d4dbe1;
+  --accent: #0c6e72;
+  --ours: #2a78d6;
+  --base: #eb6834;
+  --bridge: #6250d6;
+  --road: #1baf7a;
+  --good: #1a7f4b;
+  --warn: #9a5b00;
+  --crit: #c0352b;
+  --band: rgba(12, 110, 114, 0.12);
+  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1317; --panel: #151d23; --ink: #e9eef1; --ink-2: #a5b3bd; --line: #2a363f;
+    --accent: #56c5c2; --ours: #3987e5; --base: #d95926; --bridge: #9085e9; --road: #199e70;
+    --good: #46b983; --warn: #dba341; --crit: #e66767;
+    --band: rgba(86, 197, 194, 0.14);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1317; --panel: #151d23; --ink: #e9eef1; --ink-2: #a5b3bd; --line: #2a363f;
+  --accent: #56c5c2; --ours: #3987e5; --base: #d95926; --bridge: #9085e9; --road: #199e70;
+  --good: #46b983; --warn: #dba341; --crit: #e66767;
+  --band: rgba(86, 197, 194, 0.14);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.55; -webkit-text-size-adjust: 100%; }
+main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 48px; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: 24px; line-height: 1.25; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font-size: 16px; margin: 0; }
+p { margin: 0; }
+.lede { color: var(--ink-2); max-width: 62ch; }
+.note { color: var(--ink-2); font-size: 13px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.col { display: flex; flex-direction: column; gap: 10px; }
+button, select, input[type="text"] { font: inherit; color: inherit; }
+button { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 500; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 500; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 20px; }
+.slider { display: flex; flex-direction: column; gap: 2px; }
+.slider label { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-2); }
+.slider output { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.tile .k { font-size: 13px; color: var(--ink-2); }
+.tile .v { font-size: 26px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.tile .s { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 500; border: 1px solid currentColor; white-space: nowrap; }
+.pill.good { color: var(--good); } .pill.warn { color: var(--warn); } .pill.crit { color: var(--crit); } .pill.mute { color: var(--ink-2); }
+.advice { border-left: 4px solid var(--accent); }
+.big { font-size: 20px; font-weight: 700; line-height: 1.3; }
+.why { margin: 0; padding-left: 18px; color: var(--ink-2); }
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.chart { position: relative; }
+.chart h3 { font-size: 14px; margin: 0 0 2px; font-weight: 500; }
+.chart svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.chart .tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--ink-2); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+.meter { display: grid; grid-template-columns: 84px 1fr 48px; gap: 8px; align-items: center; font-size: 14px; }
+.meter .track { height: 12px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.meter .fill { height: 100%; border-radius: 4px; }
+.meter b { text-align: right; font-variant-numeric: tabular-nums; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.seg button { font-size: 13px; padding: 4px 10px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-2); }
+.cmd { display: flex; gap: 8px; }
+.cmd input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { font-size: 13px; padding: 4px 10px; border-radius: 999px; }
+.log { display: flex; flex-direction: column; gap: 8px; }
+.entry { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.entry .said { font-weight: 500; }
+.entry .line { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: baseline; font-size: 14px; }
+.entry .because { color: var(--ink-2); font-size: 13px; flex-basis: 100%; }
+.inv { margin: 0; padding-left: 20px; font-size: 13px; color: var(--ink-2); columns: 2 300px; column-gap: 28px; }
+.inv li { break-inside: avoid; margin-bottom: 3px; }
+.assume { font-size: 13px; color: var(--ink-2); margin: 0; padding-left: 18px; }
+label.check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; color: var(--ink); }
+@media (prefers-reduced-motion: no-preference) { button { transition: border-color 0.15s; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>미리온 공조 시뮬레이터</h1>
+    <p class="lede">같은 차, 같은 날씨, 같은 경로에서 일반 자동 공조와 미리온을 나란히 달려 봅니다. 조건을 바꾸면 차 안에서 돌아갈 엔진이 이 화면에서 그대로 다시 계산합니다.</p>
+    <p class="note">모든 수치는 모델로 계산한 추정이며 실차 측정값이 아닙니다.</p>
+  </header>
+
+  <section class="panel" aria-labelledby="h-cond">
+    <h2 id="h-cond">주행 조건</h2>
+    <div class="row" id="presets"></div>
+    <div class="sliders">
+      <div class="slider"><label for="in-tamb">외기 온도 <output id="out-tamb"></output></label><input id="in-tamb" type="range" min="-15" max="38" step="1"></div>
+      <div class="slider"><label for="in-sun">일사 <output id="out-sun"></output></label><input id="in-sun" type="range" min="0" max="1000" step="50"></div>
+      <div class="slider"><label for="in-occ">탑승 인원 <output id="out-occ"></output></label><input id="in-occ" type="range" min="1" max="4" step="1"></div>
+      <div class="slider"><label for="in-min">주행 시간 <output id="out-min"></output></label><input id="in-min" type="range" min="5" max="120" step="5"></div>
+      <div class="slider"><label for="in-rec">기준 공조의 난방 내기 순환 <output id="out-rec"></output></label><input id="in-rec" type="range" min="0" max="80" step="10"></div>
+    </div>
+    <label class="check"><input id="in-seat" type="checkbox"> 기준 공조도 시트 열선 2단을 켠 것으로 비교</label>
+  </section>
+
+  <section class="tiles" id="tiles" aria-label="요약"></section>
+
+  <section class="panel advice" aria-labelledby="h-now">
+    <h2 id="h-now">운전자에게 보이는 화면 <span class="note" id="now-min"></span></h2>
+    <div class="big" id="now-text"></div>
+    <ul class="why" id="now-why"></ul>
+    <div class="slider"><label for="in-scrub">주행 경과 시간 <output id="out-scrub"></output></label><input id="in-scrub" type="range" min="0" max="34" step="1" value="0"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-chart">
+    <h2 id="h-chart">근거 그래프</h2>
+    <div class="legend"><span><i style="background:var(--ours)"></i>미리온</span><span><i style="background:var(--base)"></i>기준 자동 공조</span><span><i style="background:var(--band);height:10px"></i>쾌적 대역</span></div>
+    <div class="charts">
+      <div class="chart" id="c-teq"></div>
+      <div class="chart" id="c-pow"></div>
+      <div class="chart" id="c-fog"></div>
+      <div class="chart" id="c-co2"></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-ice">
+    <h2 id="h-ice">노면 결빙 추정</h2>
+    <p class="lede">차가 아는 것은 외기 온도와 시각뿐이고 구름, 습도, 바람은 모릅니다. 모르는 값을 600가지로 가정해 노면 온도를 각각 계산하고, 그중 얼어 있는 비율을 확률로 보여 줍니다.</p>
+    <div class="split">
+      <div class="col">
+        <div class="slider"><label for="i-temp">외기 온도 <output id="io-temp"></output></label><input id="i-temp" type="range" min="-8" max="8" step="0.5" value="1.5"></div>
+        <div class="slider"><label for="i-hour">시각 <output id="io-hour"></output></label><input id="i-hour" type="range" min="0" max="23.5" step="0.5" value="5.5"></div>
+        <div class="field">하늘 <div class="seg" id="i-sky"></div></div>
+        <div class="field">습도 <div class="seg" id="i-hum"></div></div>
+        <div class="row">
+          <label class="check"><input id="i-rain" type="checkbox"> 지금 비·눈</label>
+          <label class="check"><input id="i-recent" type="checkbox"> 하루 안에 비</label>
+          <label class="check"><input id="i-slip" type="checkbox"> 미끄러짐 감지</label>
+        </div>
+      </div>
+      <div class="col">
+        <div class="big" id="ice-head"></div>
+        <div id="ice-action"></div>
+        <div class="meter"><span>교량·고가</span><div class="track"><div class="fill" id="ice-bar-bridge" style="background:var(--bridge)"></div></div><b id="ice-p-bridge"></b></div>
+        <div class="meter"><span>일반 도로</span><div class="track"><div class="fill" id="ice-bar-road" style="background:var(--road)"></div></div><b id="ice-p-road"></b></div>
+        <ul class="why" id="ice-why"></ul>
+      </div>
+    </div>
+    <div class="legend"><span><i style="background:var(--bridge)"></i>교량·고가</span><span><i style="background:var(--road)"></i>일반 도로</span></div>
+    <div class="chart" id="c-ice" style="max-width:620px"></div>
+    <p class="note">노면 온도 모델은 실측으로 검증하지 않았습니다. 확률이 낮게 나와도 안전하다는 뜻이 아니며, 화면은 그렇게 말하지 않습니다.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-gate">
+    <h2 id="h-gate">안전 게이트</h2>
+    <p class="lede">예측 제어가 만든 명령은 모두 게이트를 지나야 차에 보내집니다. 차량 상태를 바꿔 가며 명령을 눌러 보세요.</p>
+    <div class="split">
+      <div class="col">
+        <div class="slider"><label for="g-speed">속도 <output id="go-speed"></output></label><input id="g-speed" type="range" min="0" max="140" step="10" value="100"></div>
+        <div class="slider"><label for="g-fog">김서림 여유 <output id="go-fog"></output></label><input id="g-fog" type="range" min="-1" max="8" step="0.5" value="1"></div>
+        <div class="slider"><label for="g-co2">실내 CO2 <output id="go-co2"></output></label><input id="g-co2" type="range" min="400" max="3000" step="100" value="800"></div>
+        <div class="row">
+          <label class="check"><input id="g-rain" type="checkbox"> 비</label>
+          <label class="check"><input id="g-child" type="checkbox" checked> 뒷자리에 어린이</label>
+          <label class="check"><input id="g-pass" type="checkbox"> 조수석 탑승</label>
+        </div>
+        <p class="note" id="g-state"></p>
+      </div>
+      <div class="col">
+        <div class="chips" id="g-chips"></div>
+        <div class="log" id="g-log" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="row"><button id="v-run" type="button">게이트 전수 검사 실행</button><span id="v-out" class="note"></span></div>
+    <ol class="inv" id="v-inv"></ol>
+  </section>
+
+  <section class="panel" aria-labelledby="h-assume">
+    <h2 id="h-assume">계산에 쓴 가정</h2>
+    <ul class="assume">
+      <li>차량은 중형 전기차를 가정한 집중정수 열 모델(실내 공기, 내장재, 앞유리, 옆·뒷유리, 차체 외판)이며 수증기와 CO2 는 실내 공기의 물질수지로 계산합니다.</li>
+      <li>기준 자동 공조는 미리온과 같은 체감온도 목표를 PI 제어로 맞추고, 내기 순환은 고정(난방 시 위 슬라이더 값, 냉방 시 60%), 앞유리 풍량은 15% 고정입니다.</li>
+      <li>체감온도는 공기 온도, 주변 표면 온도, 일사, 시트 열선·통풍 효과를 합친 등가온도입니다. 열선 1단을 0.8K 로 본 것은 가정값입니다.</li>
+      <li>환산 주행거리는 사용 가능 용량 77kWh 로 이 주행 조건이 계속될 때의 값입니다. 저온에 따른 배터리 자체의 성능 저하는 넣지 않았습니다.</li>
+      <li>히트펌프 효율은 외기 온도만의 함수로 단순화했고, 냉방의 제습 부하는 넣지 않았습니다.</li>
+      <li>결빙 추정은 노면 한 층의 에너지 수지(대류, 하늘 복사, 일사, 지중 열)이며 구름량, 이슬점, 바람, 센서 오차, 모델 오차를 표본으로 뽑습니다.</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+__ENGINE__;
+</script>
+<script>
+(function () {
+  'use strict';
+  const S = __req('scenario');
+  const G = __req('gate');
+  const V = __req('verify');
+  const B = __req('blackice');
+  const $ = (id) => document.getElementById(id);
+
+  const CRUISE = { winterCommute: 80, summerSoak: 70, winterFamily: 100 };
+  const state = { key: 'winterCommute', tAmb: -5, sun: 80, occupants: 1, minutes: 35, recirc: 20, seat: false, result: null };
+
+  function profile() {
+    const p = S.PROFILES[state.key];
+    const m = state.minutes;
+    const hot = state.tAmb >= 26 && state.sun >= 400;
+    return {
+      name: p.name, note: p.note, minutes: m, tAmb: state.tAmb, sun: state.sun, rh: p.rh, occupants: state.occupants,
+      soakMinutes: hot ? 90 : 0,
+      speed: m === p.minutes ? p.speed : [[0, 30], [Math.max(1, Math.round(m * 0.25)), CRUISE[state.key]], [Math.max(2, Math.round(m * 0.9)), 25]],
+    };
+  }
+
+  const presetBox = $('presets');
+  Object.entries(S.PROFILES).forEach(([key, p]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = p.name;
+    b.title = p.note;
+    b.dataset.key = key;
+    b.addEventListener('click', () => {
+      Object.assign(state, { key, tAmb: p.tAmb, sun: p.sun, occupants: p.occupants, minutes: p.minutes });
+      syncInputs();
+      run();
+    });
+    presetBox.appendChild(b);
+  });
+
+  const inputs = [
+    ['in-tamb', 'out-tamb', 'tAmb', (v) => v + '°C'],
+    ['in-sun', 'out-sun', 'sun', (v) => v + ' W/m²'],
+    ['in-occ', 'out-occ', 'occupants', (v) => v + '명'],
+    ['in-min', 'out-min', 'minutes', (v) => v + '분'],
+    ['in-rec', 'out-rec', 'recirc', (v) => v + '%'],
+  ];
+  function syncInputs() {
+    for (const [id, out, key, fmt] of inputs) {
+      $(id).value = state[key];
+      $(out).textContent = fmt(state[key]);
+    }
+    presetBox.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.key === state.key)));
+  }
+  let timer = null;
+  for (const [id, out, key, fmt] of inputs)
+    $(id).addEventListener('input', (e) => {
+      state[key] = Number(e.target.value);
+      $(out).textContent = fmt(state[key]);
+      clearTimeout(timer);
+      timer = setTimeout(run, 180);
+    });
+  $('in-seat').addEventListener('change', (e) => {
+    state.seat = e.target.checked;
+    render();
+  });
+
+  function run() {
+    state.result = S.compare(profile(), { baseline: { recirc: state.recirc / 100 } });
+    const scrub = $('in-scrub');
+    scrub.max = state.result.ours.series.length - 1;
+    if (Number(scrub.value) > Number(scrub.max)) scrub.value = 0;
+    render();
+  }
+
+  const f1 = (x) => x.toFixed(1);
+  const signed = (x, d = 0) => (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(d);
+  const pill = (cls, text) => '<span class="pill ' + cls + '">' + text + '</span>';
+  function tile(k, v, s, extra) {
+    return '<div class="tile"><span class="k">' + k + '</span><span class="v">' + v + '</span><span class="s">' + s + (extra ? ' ' + extra : '') + '</span></div>';
+  }
+
+  function render() {
+    const r = state.result;
+    const base = state.seat ? r.baseSeat : r.base;
+    const diff = state.seat ? r.vsBaseSeat : r.vsBase;
+    const ours = r.ours;
+    const settle = (x) => Math.min.apply(null, x.series.slice(Math.min(10, x.series.length - 1)).map((p) => p.fog));
+    const fog = settle(ours);
+    const at = (x) => (x.comfortAtMin === null ? '도달 못 함' : Math.round(x.comfortAtMin) + '분');
+    $('tiles').innerHTML =
+      tile('공조 전력량', ours.hvacKWh.toFixed(2) + ' kWh', '기준 ' + base.hvacKWh.toFixed(2) + ' kWh 대비 ' + signed(-diff.hvacSavedPct) + '%') +
+      tile('환산 주행거리', signed(diff.rangeGainKm) + ' km', Math.round(base.rangeKm) + ' → ' + Math.round(ours.rangeKm) + ' km') +
+      tile('쾌적 도달', at(ours), '기준 ' + at(base)) +
+      tile('김서림 여유 최저', f1(fog) + ' K', '기준 ' + f1(settle(base)) + ' K', fog >= 1.5 ? pill('good', '안전') : fog >= 0 ? pill('warn', '한계 근접') : pill('crit', '김서림')) +
+      tile('실내 CO2 최고', Math.round(ours.co2Max).toLocaleString() + ' ppm', '기준 ' + Math.round(base.co2Max).toLocaleString() + ' ppm', ours.co2Max <= 1500 ? pill('good', '한계 안') : pill('warn', '환기 필요'));
+    renderAdvice();
+    const x = ours.series.map((p) => p.minute);
+    const pair = (key, scale) => [
+      { name: '미리온', color: 'var(--ours)', values: ours.series.map((p) => p[key] * (scale || 1)) },
+      { name: '기준', color: 'var(--base)', values: base.series.map((p) => p[key] * (scale || 1)) },
+    ];
+    chart($('c-teq'), { title: '체감온도 (°C)', x, xUnit: '분', series: pair('teq'), band: [ours.target - 0.5, ours.target + 0.5], digits: 1, unit: '°C' });
+    chart($('c-pow'), { title: '공조 전력 (kW)', x, xUnit: '분', series: pair('power', 0.001), digits: 2, unit: 'kW', zero: true });
+    chart($('c-fog'), { title: '앞유리 김서림 여유 (K), 점선은 게이트 한계 1.5K', x, xUnit: '분', series: pair('fog'), limit: 1.5, digits: 1, unit: 'K' });
+    chart($('c-co2'), { title: '실내 CO2 (ppm), 점선은 게이트 한계 1,500ppm', x, xUnit: '분', series: pair('co2'), limit: 1500, digits: 0, unit: 'ppm' });
+  }
+
+  function renderAdvice() {
+    const r = state.result;
+    const m = Number($('in-scrub').value);
+    const p = r.ours.series[m];
+    const heating = state.tAmb < r.ours.target - 2;
+    const parts = [];
+    if (Math.abs(p.q) < 1) parts.push('공조 대기');
+    else parts.push((heating ? '난방 ' : '냉방 ') + Math.abs(p.q / 1000).toFixed(1) + ' kW');
+    parts.push('내기 순환 ' + Math.round(p.recirc * 100) + '%');
+    if (heating && p.defrost >= 0.05) parts.push('앞유리 풍량 ' + Math.round(p.defrost * 100) + '%');
+    if (p.local > 0) parts.push('시트 열선 ' + p.local + '단');
+    if (p.local < 0) parts.push('시트 통풍 ' + -p.local + '단');
+    $('now-text').textContent = parts.join(' · ');
+    const why = [];
+    why.push('도착까지 ' + (r.profile.minutes - m) + '분, 체감온도 ' + f1(p.teq) + '°C (목표 ' + r.ours.target + '°C)');
+    if (!heating && m < 3 && p.recirc < 0.3) why.push('실내가 바깥보다 뜨거워 먼저 외기로 열기를 뺍니다.');
+    else if (heating && p.defrost >= 0.05) why.push('바람 일부를 앞유리로 보내 유리를 데우고, 그만큼 내기 순환을 더 씁니다. 김서림 여유 ' + f1(p.fog) + 'K.');
+    else if (p.recirc >= 0.6) why.push('탑승 ' + state.occupants + '명, 김서림 여유 ' + f1(p.fog) + 'K 로 넉넉해 외기를 적게 들이고 부하를 줄입니다.');
+    else if (heating) why.push('김서림 여유 ' + f1(p.fog) + 'K, CO2 ' + Math.round(p.co2) + 'ppm 을 지키려고 외기를 ' + Math.round((1 - p.recirc) * 100) + '% 들입니다.');
+    if (p.local > 0) why.push('열선이 체감을 올려 주는 만큼 히터 출력을 낮춥니다.');
+    if (p.local < 0) why.push('통풍 시트가 체감을 내려 주는 만큼 냉방 출력을 낮춥니다.');
+    $('now-why').innerHTML = why.map((t) => '<li>' + t + '</li>').join('');
+    $('out-scrub').textContent = m + '분';
+    $('now-min').textContent = '출발 ' + m + '분 뒤';
+  }
+  $('in-scrub').addEventListener('input', renderAdvice);
+
+  function niceTicks(lo, hi, n) {
+    const span = hi - lo || 1;
+    const raw = span / n;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((s) => s >= raw);
+    const out = [];
+    for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9; v += step) out.push(Number(v.toFixed(6)));
+    return out;
+  }
+  function chart(el, o) {
+    const W = 520, H = 230, L = 44, R = 14, Tp = 10, B0 = 26;
+    let lo = Infinity, hi = -Infinity;
+    for (const s of o.series) for (const v of s.values) { if (v < lo) lo = v; if (v > hi) hi = v; }
+    if (o.band) { lo = Math.min(lo, o.band[0]); hi = Math.max(hi, o.band[1]); }
+    if (o.limit !== undefined) { lo = Math.min(lo, o.limit); hi = Math.max(hi, o.limit); }
+    if (o.zero) lo = Math.min(lo, 0);
+    if (o.range) { lo = o.range[0]; hi = o.range[1]; }
+    else { const pad = (hi - lo) * 0.08 || 1; lo -= o.zero && lo === 0 ? 0 : pad; hi += pad; }
+    const xMin = o.x[0];
+    const xMax = o.x[o.x.length - 1];
+    const X = (m) => L + ((W - L - R) * (m - xMin)) / (xMax - xMin || 1);
+    const Y = (v) => Tp + (H - Tp - B0) * (1 - (v - lo) / (hi - lo));
+    let g = '';
+    for (const t of niceTicks(lo, hi, 4)) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(t) + '" y2="' + Y(t) + '" stroke="var(--line)" stroke-width="1"/><text x="' + (L - 6) + '" y="' + (Y(t) + 4) + '" text-anchor="end" font-size="11" fill="var(--ink-2)">' + t.toLocaleString() + '</text>';
+    for (const t of niceTicks(xMin, xMax, 5)) g += '<text x="' + X(t) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="var(--ink-2)">' + t + o.xUnit + '</text>';
+    if (o.band) g += '<rect x="' + L + '" width="' + (W - L - R) + '" y="' + Y(o.band[1]) + '" height="' + (Y(o.band[0]) - Y(o.band[1])) + '" fill="var(--band)"/>';
+    if (o.limit !== undefined) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(o.limit) + '" y2="' + Y(o.limit) + '" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="5 4"/>';
+    for (const s of o.series.slice().reverse()) {
+      const d = s.values.map((v, i) => (i ? 'L' : 'M') + X(o.x[i]).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+      g += '<path d="' + d + '" fill="none" stroke="' + s.color + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+      const last = s.values.length - 1;
+      g += '<circle cx="' + X(o.x[last]) + '" cy="' + Y(s.values[last]) + '" r="4" fill="' + s.color + '" stroke="var(--panel)" stroke-width="2"/>';
+    }
+    if (o.startLabels) {
+      const tags = o.series.map((s) => ({ name: s.name, y: Y(s.values[0]) - 7 })).sort((p, q) => p.y - q.y);
+      for (let i = 1; i < tags.length; i++) if (tags[i].y - tags[i - 1].y < 15) tags[i].y = tags[i - 1].y + 24;
+      for (const t of tags) g += '<text x="' + (L + 6) + '" y="' + Math.max(Tp + 10, t.y) + '" font-size="11" fill="var(--ink)">' + t.name + '</text>';
+    }
+    g += '<line class="cross" y1="' + Tp + '" y2="' + (H - B0) + '" stroke="var(--ink-2)" stroke-width="1" visibility="hidden"/>';
+    el.innerHTML = '<h3>' + o.title + '</h3><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + o.title + '">' + g + '</svg><div class="tip"></div>';
+    const svg = el.querySelector('svg');
+    const cross = el.querySelector('.cross');
+    const tip = el.querySelector('.tip');
+    function move(e) {
+      const box = svg.getBoundingClientRect();
+      const px = ((e.clientX - box.left) / box.width) * W;
+      const want = xMin + ((px - L) / (W - L - R)) * (xMax - xMin);
+      let i = 0;
+      for (let k = 1; k < o.x.length; k++) if (Math.abs(o.x[k] - want) < Math.abs(o.x[i] - want)) i = k;
+      cross.setAttribute('x1', X(o.x[i])); cross.setAttribute('x2', X(o.x[i])); cross.setAttribute('visibility', 'visible');
+      tip.innerHTML = '<b>' + o.x[i] + o.xUnit + '</b><br>' + o.series.map((s) => '<span style="color:' + s.color + '">●</span> ' + s.name + ' ' + s.values[i].toLocaleString(undefined, { minimumFractionDigits: o.digits, maximumFractionDigits: o.digits }) + ' ' + o.unit).join('<br>');
+      tip.style.display = 'block';
+      const left = (X(o.x[i]) / W) * box.width;
+      tip.style.left = Math.min(box.width - tip.offsetWidth - 4, Math.max(4, left + 10)) + 'px';
+      tip.style.top = '28px';
+    }
+    svg.addEventListener('pointermove', move);
+    svg.addEventListener('pointerdown', move);
+    svg.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); tip.style.display = 'none'; });
+  }
+
+  const ice = { sky: 'unknown', humidity: null };
+  function segment(boxId, options, key) {
+    const box = $(boxId);
+    options.forEach(([value, label]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.addEventListener('click', () => {
+        ice[key] = value;
+        box.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        scheduleIce();
+      });
+      b.setAttribute('aria-pressed', String(ice[key] === value));
+      box.appendChild(b);
+    });
+  }
+  segment('i-sky', [['unknown', '모름'], ['clear', '맑음'], ['overcast', '흐림']], 'sky');
+  segment('i-hum', [[null, '모름'], [0.3, '건조'], [0.6, '보통'], [0.9, '습함']], 'humidity');
+  const ICE_PILL = { danger: 'crit', warning: 'warn', caution: 'warn', low: 'mute' };
+  function iceObs() {
+    return {
+      outsideTemp: Number($('i-temp').value), hour: Number($('i-hour').value), sky: ice.sky, humidity: ice.humidity,
+      raining: $('i-rain').checked, recentRain: $('i-recent').checked, slipEvents: $('i-slip').checked ? 1 : 0,
+    };
+  }
+  function renderIce() {
+    const obs = iceObs();
+    const h = Math.floor(obs.hour);
+    $('io-temp').textContent = obs.outsideTemp.toFixed(1) + '°C';
+    $('io-hour').textContent = (h < 10 ? '0' : '') + h + ':' + (obs.hour % 1 ? '30' : '00');
+    const r = B.assess(obs);
+    $('ice-head').textContent = r.headline;
+    $('ice-action').innerHTML = pill(ICE_PILL[r.level], r.levelText) + ' ' + r.action;
+    for (const key of ['bridge', 'road']) {
+      const p = Math.round(r[key].probability * 100);
+      $('ice-bar-' + key).style.width = p + '%';
+      $('ice-p-' + key).textContent = p + '%';
+    }
+    $('ice-why').innerHTML = r.reasons.map((t) => '<li>' + t + '</li>').join('');
+    const temps = [-8, -6, -4, -2, -1, 0, 1, 2, 3, 4, 6, 8];
+    const sweep = B.sweepTemperature(obs, temps, { particles: 300 });
+    chart($('c-ice'), {
+      title: '같은 조건에서 외기 온도에 따른 결빙 확률 (%)', x: temps, xUnit: '°C', range: [0, 100], digits: 0, unit: '%', startLabels: true,
+      series: [
+        { name: '교량·고가', color: 'var(--bridge)', values: sweep.map((s) => Math.round(s.bridge * 100)) },
+        { name: '일반 도로', color: 'var(--road)', values: sweep.map((s) => Math.round(s.road * 100)) },
+      ],
+    });
+  }
+  let iceTimer = null;
+  function scheduleIce() {
+    clearTimeout(iceTimer);
+    iceTimer = setTimeout(renderIce, 150);
+  }
+  ['i-temp', 'i-hour', 'i-rain', 'i-recent', 'i-slip'].forEach((id) => $(id).addEventListener('input', scheduleIce));
+
+  function vehicle() {
+    const speed = Number($('g-speed').value);
+    const pass = $('g-pass').checked;
+    const child = $('g-child').checked;
+    return {
+      speed, gear: speed > 0 ? 'D' : 'P', fogMargin: Number($('g-fog').value), co2: Number($('g-co2').value), rain: $('g-rain').checked,
+      occupied: { driver: true, passenger: pass, rearLeft: child, rearRight: false },
+      child: { driver: false, passenger: false, rearLeft: child, rearRight: false },
+    };
+  }
+  function syncGate() {
+    const v = vehicle();
+    $('go-speed').textContent = v.speed + ' km/h';
+    $('go-fog').textContent = v.fogMargin.toFixed(1) + ' K';
+    $('go-co2').textContent = v.co2.toLocaleString() + ' ppm';
+    $('g-state').textContent = '기어 ' + v.gear + (v.speed > 0 ? ', 주행 중' : ', 정차') + ' · 탑승: 운전석' + (v.occupied.passenger ? ', 조수석' : '') + (v.occupied.rearLeft ? ', 뒷자리(어린이)' : '');
+  }
+  ['g-speed', 'g-fog', 'g-co2', 'g-rain', 'g-child', 'g-pass'].forEach((id) => $(id).addEventListener('input', syncGate));
+
+  const SEAT = { driver: '운전석', passenger: '조수석', rearLeft: '뒷자리 왼쪽', rearRight: '뒷자리 오른쪽' };
+  function describe(c) {
+    switch (c.type) {
+      case 'hvac.setTemp': return '설정 온도 ' + c.value + '°C';
+      case 'hvac.power': return '공조 출력 ' + c.value + ' W';
+      case 'hvac.recirc': return '내기 순환 ' + Math.round(c.value * 100) + '%';
+      case 'hvac.defrost': return '성에 제거 ' + (c.on ? '켜기' : '끄기');
+      case 'hvac.defrostShare': return '앞유리 풍량 ' + Math.round(c.value * 100) + '%';
+      case 'seat.heat': return SEAT[c.seat] + (c.level > 0 ? ' 열선 ' + c.level + '단' : c.level < 0 ? ' 통풍 ' + -c.level + '단' : ' 열선·통풍 끄기');
+      case 'seat.position': return SEAT[c.seat] + ' 위치 ' + (c.delta > 0 ? '뒤로' : '앞으로') + ' ' + Math.abs(c.delta) + 'mm';
+      case 'window.open': return SEAT[c.seat] + ' 창문 ' + c.percent + '% 열기';
+      case 'door.open': return '문 열기';
+      case 'door.unlock': return '문 잠금 해제';
+      case 'wiper.set': return '와이퍼 ' + c.mode;
+      default: return c.type;
+    }
+  }
+  const VERDICT = { allow: ['good', '통과'], clamp: ['warn', '보정'], deny: ['crit', '거부'] };
+  const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+  const esc = (t) => t.replace(/[&<>]/g, (ch) => ESC[ch]);
+
+  function send(label, commands) {
+    const v = vehicle();
+    let rows = '';
+    for (const cmd of commands) {
+      const res = G.decide(cmd, v, 'ai');
+      const tag = VERDICT[res.verdict];
+      rows += '<div class="line"><span>요청: ' + describe(cmd) + '</span>' + pill(tag[0], tag[1]) + (res.verdict === 'clamp' ? '<span>→ 실행: ' + describe(res.command) + '</span>' : '') + (res.reason ? '<span class="because">' + res.reason + '</span>' : '') + '</div>';
+    }
+    const entry = document.createElement('div');
+    entry.className = 'entry';
+    entry.innerHTML = '<span class="said">' + esc(label) + '</span>' + rows;
+    const log = $('g-log');
+    log.insertBefore(entry, log.firstChild);
+    while (log.children.length > 4) log.removeChild(log.lastChild);
+  }
+  const ALL = ['driver', 'passenger', 'rearLeft', 'rearRight'];
+  [
+    ['앞유리 김서림 제거', [{ type: 'hvac.defrost', on: true }, { type: 'hvac.recirc', value: 0 }]],
+    ['내기 순환 켜기', [{ type: 'hvac.recirc', value: 0.9 }]],
+    ['창문 전부 열기', ALL.map((seat) => ({ type: 'window.open', seat, percent: 100 }))],
+    ['문 열기', [{ type: 'door.open' }]],
+    ['설정 온도 99도', [{ type: 'hvac.setTemp', value: 99 }]],
+    ['뒷자리 열선 3단', [{ type: 'seat.heat', seat: 'rearLeft', level: 3 }]],
+    ['운전석 뒤로 밀기', [{ type: 'seat.position', seat: 'driver', delta: 10 }]],
+  ].forEach(([label, commands]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.addEventListener('click', () => send(label, commands));
+    $('g-chips').appendChild(b);
+  });
+
+  $('v-inv').innerHTML = V.INVARIANTS.map((inv) => '<li>' + inv.text + '</li>').join('');
+  $('v-run').addEventListener('click', () => {
+    $('v-out').textContent = '검사 중…';
+    setTimeout(() => {
+      const t0 = performance.now();
+      const r = V.run('quick');
+      $('v-out').innerHTML = r.checked.toLocaleString() + '건 조합 검사, 불변식 ' + r.invariants + '개, 위반 ' + r.violations + '건 (' + ((performance.now() - t0) / 1000).toFixed(1) + '초) ' + (r.violations === 0 ? pill('good', '위반 없음') : pill('crit', '위반 발견')) + ' · 이 화면은 축약 격자이고, 전체 격자 __GATE_FULL__건은 저장소의 테스트가 돌립니다.';
+    }, 30);
+  });
+
+  syncInputs();
+  syncGate();
+  run();
+  renderIce();
+  send('문 열기', [{ type: 'door.open' }]);
+  send('내기 순환 켜기', [{ type: 'hvac.recirc', value: 0.9 }]);
+})();
+</script>
+</body>
+</html>

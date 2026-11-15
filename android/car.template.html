@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>미리온</title>
+<style>
+:root { --bg: #0b1115; --panel: #141c22; --ink: #eef2f4; --ink-2: #a7b4bd; --line: #26323b; --accent: #56c5c2; --warn: #dba341; --crit: #e66767; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; font-size: 20px; line-height: 1.45; }
+main { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; padding: 20px; min-height: 100%; align-content: start; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+h2 { margin: 0; font-size: 16px; font-weight: 500; color: var(--ink-2); }
+.big { font-size: 30px; font-weight: 700; line-height: 1.25; }
+ul { margin: 0; padding-left: 22px; color: var(--ink-2); font-size: 18px; }
+.tag { align-self: flex-start; border: 1px solid currentColor; border-radius: 999px; padding: 2px 12px; font-size: 15px; }
+.tag.low { color: var(--ink-2); } .tag.caution, .tag.warning { color: var(--warn); } .tag.danger { color: var(--crit); }
+.signals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; font-size: 16px; }
+.signals div { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; gap: 8px; }
+.signals b { font-variant-numeric: tabular-nums; }
+.signals .none b { color: var(--warn); }
+button { font: inherit; font-size: 18px; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 12px 18px; min-height: 56px; }
+button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 700; }
+.note { font-size: 15px; color: var(--ink-2); }
+</style>
+</head>
+<body>
+<main>
+  <section>
+    <h2>공조 제안</h2>
+    <div class="big" id="card">신호를 읽는 중</div>
+    <ul id="why"></ul>
+    <button id="auto" type="button" aria-pressed="false">자동 적용 꺼짐</button>
+    <div class="note" id="status"></div>
+  </section>
+  <section>
+    <h2>노면 결빙</h2>
+    <div class="big" id="ice">외기 온도를 기다리는 중</div>
+    <span class="tag low" id="ice-tag">대기</span>
+    <div id="ice-action"></div>
+    <ul id="ice-why"></ul>
+  </section>
+  <section>
+    <h2 id="src">차량 신호</h2>
+    <div class="signals" id="signals"></div>
+  </section>
+</main>
+<script>
+__ENGINE__;
+</script>
+<script>
+(function () {
+  'use strict';
+  const R = __req('runtime');
+  const $ = (id) => document.getElementById(id);
+  const real = typeof window.MirionBridge !== 'undefined';
+  let fakeTime = 0;
+  let fakeRecirc = false;
+  let fakeSeat = 0;
+  const bridge = real
+    ? window.MirionBridge
+    : {
+        snapshot() {
+          fakeTime += 60;
+          const cabin = Math.min(22, -3 + fakeTime / 40);
+          return JSON.stringify({ cabinTemp: cabin, outsideTemp: -5, speedKmh: 60, gear: 'D', recirculation: fakeRecirc, setTemp: 22, fanSpeed: 4, batterySoc: 64, seatLevel: fakeSeat, occupants: 1, hour: 6.5, timeSeconds: fakeTime, errors: {} });
+        },
+        apply(json) {
+          const c = JSON.parse(json);
+          if (c.type === 'recirculation') fakeRecirc = c.on;
+          if (c.type === 'seatHeat') fakeSeat = c.level;
+          return true;
+        },
+      };
+  const runtime = R.createRuntime();
+  let auto = false;
+  const LABELS = { cabinTemp: ['실내 온도', '°C', 1], outsideTemp: ['외기 온도', '°C', 1], setTemp: ['설정 온도', '°C', 1], speedKmh: ['속도', 'km/h', 0], batterySoc: ['배터리', '%', 0], fanSpeed: ['송풍', '단', 0], seatLevel: ['운전석 열선', '단', 0], occupants: ['탑승', '명', 0] };
+  const TAG = { low: '낮음', caution: '주의', warning: '경고', danger: '위험' };
+
+  function tick() {
+    let snap;
+    try {
+      snap = JSON.parse(bridge.snapshot());
+    } catch (error) {
+      $('status').textContent = '차량 신호를 읽지 못했습니다.';
+      return;
+    }
+    const cells = Object.entries(LABELS).map(([key, [name, unit, digits]]) => {
+      const v = snap[key];
+      const has = typeof v === 'number' && isFinite(v);
+      return '<div class="' + (has ? '' : 'none') + '"><span>' + name + '</span><b>' + (has ? v.toFixed(digits) + unit : '없음') + '</b></div>';
+    });
+    cells.push('<div><span>내기 순환</span><b>' + (typeof snap.recirculation === 'boolean' ? (snap.recirculation ? '켜짐' : '꺼짐') : '없음') + '</b></div>');
+    $('signals').innerHTML = cells.join('');
+    $('src').textContent = real ? '차량 신호 (Pleos Vehicle SDK)' : '차량 신호 (차 밖 미리보기용 가상 값)';
+    const out = runtime.update(snap);
+    if (!out.ok) {
+      $('card').textContent = '필요한 신호가 없습니다';
+      $('why').innerHTML = out.missing.map((k) => '<li>' + (LABELS[k] ? LABELS[k][0] : k) + '를 읽지 못했습니다.</li>').join('');
+      return;
+    }
+    $('card').textContent = out.card.text;
+    $('why').innerHTML = out.card.reasons.map((t) => '<li>' + t + '</li>').join('');
+    if (out.ice) {
+      $('ice').textContent = out.ice.headline;
+      $('ice-tag').textContent = TAG[out.ice.level];
+      $('ice-tag').className = 'tag ' + out.ice.level;
+      $('ice-action').textContent = out.ice.action;
+      $('ice-why').innerHTML = out.ice.reasons.map((t) => '<li>' + t + '</li>').join('');
+    }
+    let sent = 0;
+    if (auto) for (const command of out.commands) if (bridge.apply(JSON.stringify(command))) sent++;
+    const errors = snap.errors ? Object.keys(snap.errors) : [];
+    $('status').textContent = (auto ? '안전 게이트를 통과한 명령 ' + sent + '건을 차에 보냈습니다.' : out.commands.length ? '차의 공조 버튼으로 직접 맞춰 주세요.' : '차가 제안과 같은 상태입니다.') + (errors.length ? ' 읽지 못한 신호: ' + errors.join(', ') : '');
+  }
+
+  $('auto').addEventListener('click', () => {
+    auto = !auto;
+    $('auto').setAttribute('aria-pressed', String(auto));
+    $('auto').textContent = auto ? '자동 적용 켜짐' : '자동 적용 꺼짐';
+  });
+  tick();
+  setInterval(tick, real ? 60000 : 3000);
+})();
+</script>
+</body>
+</html>
